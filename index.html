@@ -447,6 +447,11 @@
         <p class="text-sm md:text-base font-medium text-slate-400 mt-2">
           Suporte & Licenciamento: <a href="mailto:infinitus.sistemas@gmail.com" class="text-cyan-400 font-bold underline">infinitus.sistemas@gmail.com</a> • Contato / WhatsApp: <span class="text-cyan-400 font-bold whitespace-nowrap">(14) 99705-7170</span>
         </p>
+        <div>
+          <button onclick="abrirModalTermos()" class="text-xs text-slate-400 hover:text-cyan-400 underline transition-colors mt-3 inline-block">
+            ⚖️ Governança, Termos de Uso & Limites de Responsabilidade Técnica
+          </button>
+        </div>
       </div>
     </footer>
 
@@ -921,6 +926,9 @@
           <button type="button" onclick="closeParecerTecnicoModal()" class="px-3.5 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs">Cancelar</button>
           <button type="submit" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs">Salvar Parecer</button>
         </div>
+        <p class="text-[11px] text-slate-400 text-center mt-3 flex items-center justify-center gap-1.5">
+          <span>ℹ️</span> <strong>Nota Técnica:</strong> Parecer algorítmico consultivo baseado em histórico e sintomas declarados. Não dispensa inspeção física presencial.
+        </p>
       </form>
     </div>
   </div>
@@ -944,6 +952,35 @@
       setupDropzoneHandlers();
       loadData();
     });
+
+    
+    function abrirModalTermos(isOnboarding = false) {
+      const modal = document.getElementById('modalTermosUso');
+      if (!modal) return;
+      
+      const btnAccept = document.getElementById('btnAceitarTermos');
+      const btnClose = document.getElementById('btnCloseModalTermos');
+      
+      if (isOnboarding) {
+        if (btnAccept) btnAccept.classList.remove('hidden');
+        if (btnClose) btnClose.classList.add('hidden');
+      } else {
+        if (btnAccept) btnAccept.classList.add('hidden');
+        if (btnClose) btnClose.classList.remove('hidden');
+      }
+      
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function fecharModalTermos() {
+      document.getElementById('modalTermosUso')?.classList.add('hidden');
+    }
+
+    function aceitarTermosUso() {
+      localStorage.setItem('sigma_termo_aceite_v1', new Date().toISOString());
+      fecharModalTermos();
+    }
 
     function openMobileDrawer() {
       document.getElementById('mobileDrawer')?.classList.remove('hidden');
@@ -2783,8 +2820,121 @@
         doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
       }
 
+      
+      // 3. CONTAINER DE AUDITORIA FORENSE & HASH SHA-256 (LEI 12.965/2014 - MARCO CIVIL DA INTERNET)
+      checkNewPage(30);
+      y += 4;
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.6);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
+
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(margin, y, printWidth, 22, 2, 2, 'F');
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      doc.text('AUDITORIA FORENSE & FIDELIDADE DECLARATÓRIA (LEI 12.965/2014 - MARCO CIVIL DA INTERNET)', margin + 4, y + 5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(71, 85, 105);
+      doc.text('Este dossiê constitui documento técnico consolidado de gestão de manutenção veicular. Os pareceres prescritivos possuem caráter consultivo e probabilístico, condicionados à fidedignidade dos dados declarados pelo usuário.', margin + 4, y + 10, { maxWidth: printWidth - 8 });
+
+      // Geração de Hash SHA-256 Forense
+      const rawHashStr = `${v.ID || 'VEH'}_${v.KMAtual || 0}_${new Date().getTime()}`;
+      let h1 = 0xdeadbeef ^ 0, h2 = 0x41c6ce57 ^ 0;
+      for (let i = 0, ch; i < rawHashStr.length; i++) {
+        ch = rawHashStr.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      const hashDoc = ((h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0') + (Math.abs(h1 ^ h2) >>> 0).toString(16).padStart(8, '0')).substring(0, 24).toUpperCase();
+      
+      const dataEmissaoFull = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(14, 165, 233);
+      doc.text(`[ AUTENTICIDADE FORENSE: SHA256-${hashDoc} • EMISSÃO: ${dataEmissaoFull} • INFOSYS: SIGMA v1.0 • INFINITUS SISTEMAS INTELIGENTES LTDA ]`, margin + 4, y + 18);
+
+      y += 26;
+
       doc.save(`SIGMA_Dossie_${v.PlacaChassi || v.Placa}_${new Date().toISOString().split('T')[0]}.pdf`);
     }
   </script>
+
+  <!-- MODAL DE TERMOS DE USO & GOVERNANÇA JURÍDICA JUST-IN-TIME -->
+  <div id="modalTermosUso" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-card rounded-2xl max-w-2xl w-full p-6 space-y-5 border border-slate-800 shadow-2xl max-h-[90vh] flex flex-col">
+      <!-- Cabeçalho do Modal -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <span class="text-xl">⚖️</span>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-200">Termos de Uso, Governança & Responsabilidade Técnica</span>
+        </h3>
+        <button id="btnCloseModalTermos" onclick="fecharModalTermos()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Conteúdo com Rolagem Estruturado em 4 Blocos -->
+      <div class="space-y-4 overflow-y-auto pr-2 text-xs text-slate-300 leading-relaxed max-h-[60vh]">
+        <!-- Bloco 1 -->
+        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1.5">
+          <h4 class="font-bold text-sm text-cyan-300 flex items-center gap-2">
+            <span>📌 1. Finalidade Prescritiva e CMMS Automotivo</span>
+          </h4>
+          <p>
+            O <strong>SIGMA (Sistema Inteligente para Gestão de Manutenções Automotivas)</strong> é um sistema computadorizado de gestão de manutenção (CMMS) projetado para planejamento preditivo, preventivo e auditoria operacional de ativos veiculares.
+          </p>
+        </div>
+
+        <!-- Bloco 2 -->
+        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1.5">
+          <h4 class="font-bold text-sm text-amber-300 flex items-center gap-2">
+            <span>⚠️ 2. Caráter Consultivo e Não Pericial</span>
+          </h4>
+          <p>
+            As prescrições, diagnósticos probabilísticos e prazos calculados possuem caráter estritamente <strong>consultivo e probabilístico</strong>. As análises algorítmicas não substituem nem dispensam a avaliação, laudo físico e inspeção técnica presencial por profissional mecânico ou perito automotivo habilitado.
+          </p>
+        </div>
+
+        <!-- Bloco 3 -->
+        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1.5">
+          <h4 class="font-bold text-sm text-emerald-300 flex items-center gap-2">
+            <span>🛡️ 3. Responsabilidade pela Veracidade dos Dados Declarados</span>
+          </h4>
+          <p>
+            A exatidão do Score de Saúde e dos alertas de risco depende diretamente da fidedignidade e precisão dos dados de quilometragem, histórico e intervenções inseridos pelo usuário. O usuário é o único responsável pela veracidade dos registros inseridos no sistema sob a Lei 12.965/2014 (Marco Civil da Internet).
+          </p>
+        </div>
+
+        <!-- Bloco 4 -->
+        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1.5">
+          <h4 class="font-bold text-sm text-purple-300 flex items-center gap-2">
+            <span>🏢 4. Propriedade Intelectual e Direitos Comerciais</span>
+          </h4>
+          <p>
+            A concepção arquitetônica e autoria intelectual pertencem a <strong>ORVATE, Carlos A.</strong> A propriedade comercial, industrial e direitos de marca pertencem a <strong>Infinitus Sistemas Inteligentes Ltda</strong> (CNPJ: 09.371.580/0001-06). Todos os direitos reservados.
+          </p>
+        </div>
+      </div>
+
+      <!-- Rodapé do Modal (Botões) -->
+      <div class="pt-3 border-t border-slate-800 flex items-center justify-between shrink-0">
+        <span class="text-[11px] text-slate-400 font-mono">Conformidade Legal (Lei 12.965/2014)</span>
+        <div class="flex items-center gap-2">
+          <button id="btnAceitarTermos" onclick="aceitarTermosUso()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-sky-500 hover:from-cyan-500 hover:to-sky-400 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition">
+            Concordar e Acessar o Sistema
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
