@@ -2572,6 +2572,7 @@ function promptEditKm() {
     function addMultiItemRow(itemData = {}) {
       const tbody = document.getElementById('multiItemsTableBody');
       const rowId = 'item-row-' + Date.now() + '-' + Math.floor(Math.random()*10000);
+      const subVal = itemData.subsistema || 'Motor/Trem de Força';
 
       const tr = document.createElement('tr');
       tr.id = rowId;
@@ -2590,7 +2591,17 @@ function promptEditKm() {
           <input type="text" class="item-desc w-full bg-slate-900 text-xs text-slate-200 rounded px-2 py-1 border border-slate-700" placeholder="Descrição da peça ou serviço" value="${itemData.desc || ''}">
         </td>
         <td class="py-1.5 px-1.5">
-          <input type="text" class="item-sub w-full bg-slate-900 text-xs text-slate-200 rounded px-2 py-1 border border-slate-700" placeholder="Motor/Trem de Força" value="${itemData.subsistema || 'Motor/Trem de Força'}">
+          <select class="item-sub w-full bg-slate-900 text-xs text-slate-200 rounded px-1.5 py-1 border border-slate-700">
+            <option value="Motor/Trem de Força" ${subVal === 'Motor/Trem de Força' ? 'selected' : ''}>Motor/Trem de Força</option>
+            <option value="Arrefecimento" ${subVal === 'Arrefecimento' ? 'selected' : ''}>Arrefecimento</option>
+            <option value="Transmissão" ${subVal === 'Transmissão' ? 'selected' : ''}>Transmissão</option>
+            <option value="Freios" ${subVal === 'Freios' ? 'selected' : ''}>Freios</option>
+            <option value="Suspensão/Direção" ${subVal === 'Suspensão/Direção' ? 'selected' : ''}>Suspensão/Direção</option>
+            <option value="Elétrica/Eletrônica" ${subVal === 'Elétrica/Eletrônica' ? 'selected' : ''}>Elétrica/Eletrônica</option>
+            <option value="Climatização" ${subVal === 'Climatização' ? 'selected' : ''}>Climatização</option>
+            <option value="Injeção/Alimentação" ${subVal === 'Injeção/Alimentação' ? 'selected' : ''}>Injeção/Alimentação</option>
+            <option value="Outros / Geral" ${subVal === 'Outros / Geral' ? 'selected' : ''}>Outros / Geral</option>
+          </select>
         </td>
         <td class="py-1.5 px-1.5">
           <input type="number" step="0.01" min="0" class="item-unit w-full bg-slate-900 text-xs text-right text-emerald-400 font-mono font-bold rounded px-1.5 py-1 border border-slate-700" placeholder="0.00" value="${itemData.valor !== undefined ? itemData.valor : ''}" oninput="computeTotalFormCost()">
@@ -2648,12 +2659,23 @@ function promptEditKm() {
 
       lines.forEach(line => {
         if (line.trim().startsWith('•')) {
-          const matches = line.match(/•\s*(.*?)\s*-\s*R\$\s*([\d.]+)\s*\((.*?)\)/);
-          if (matches) {
+          const matchWithSub = line.match(/•\s*(.*?)\s*-\s*R\$\s*([\d.]+)\s*\((.*?)\s*\|\s*(.*?)\)/);
+          const matchSimple = line.match(/•\s*(.*?)\s*-\s*R\$\s*([\d.]+)\s*\((.*?)\)/);
+
+          if (matchWithSub) {
             addMultiItemRow({
-              desc: matches[1],
-              valor: Number(matches[2]),
-              tipo: matches[3]
+              desc: matchWithSub[1].trim(),
+              valor: Number(matchWithSub[2]),
+              tipo: matchWithSub[3].trim(),
+              subsistema: matchWithSub[4].trim()
+            });
+            loaded++;
+          } else if (matchSimple) {
+            addMultiItemRow({
+              desc: matchSimple[1].trim(),
+              valor: Number(matchSimple[2]),
+              tipo: matchSimple[3].trim(),
+              subsistema: log.Subsistema || 'Motor/Trem de Força'
             });
             loaded++;
           }
@@ -2661,7 +2683,12 @@ function promptEditKm() {
       });
 
       if (loaded === 0) {
-        addMultiItemRow({ desc: desc.replace(/^•\s*/, ''), valor: Number(log.ValorTotal || 0), tipo: 'Peça' });
+        addMultiItemRow({ 
+          desc: desc.replace(/^•\s*/, ''), 
+          valor: Number(log.ValorTotal || 0), 
+          tipo: 'Peça',
+          subsistema: log.Subsistema || 'Motor/Trem de Força'
+        });
       }
 
       document.getElementById('maintenanceModal').classList.remove('hidden');
@@ -2677,55 +2704,75 @@ function promptEditKm() {
       const rows = document.querySelectorAll('#multiItemsTableBody tr');
       const lines = [];
       let calculatedTotal = 0;
+      const distinctSubs = [];
 
       rows.forEach(tr => {
         const tipo = tr.querySelector('.item-tipo')?.value || 'Peça';
         const desc = tr.querySelector('.item-desc')?.value || '';
+        const sub = tr.querySelector('.item-sub')?.value || 'Motor/Trem de Força';
         const val = Number(tr.querySelector('.item-unit')?.value || 0);
         calculatedTotal += val;
 
         if (desc.trim()) {
-          lines.push(`• ${desc} - R$ ${val.toFixed(2)} (${tipo})`);
+          if (!distinctSubs.includes(sub)) distinctSubs.push(sub);
+          lines.push(`• ${desc} - R$ ${val.toFixed(2)} (${tipo} | ${sub})`);
         }
       });
 
+      const primarySubsistema = distinctSubs[0] || 'Motor/Trem de Força';
+
       const logData = {
         id: logId,
+        ID: logId,
         veiculoId: v.ID,
+        VeiculoID: v.ID,
         placa: v.PlacaChassi || v.Placa || '',
+        Placa: v.PlacaChassi || v.Placa || '',
         data: document.getElementById('formData').value,
+        Data: document.getElementById('formData').value,
         km: Number(document.getElementById('formKm').value),
+        KM: Number(document.getElementById('formKm').value),
         tipoManutencao: document.getElementById('formTipo').value,
+        TipoManutencao: document.getElementById('formTipo').value,
+        subsistema: primarySubsistema,
+        Subsistema: primarySubsistema,
         oficinaNome: document.getElementById('formOficinaNome').value,
+        OficinaNome: document.getElementById('formOficinaNome').value,
         oficinaCNPJ: document.getElementById('formOficinaCNPJ').value,
+        OficinaCNPJ: document.getElementById('formOficinaCNPJ').value,
         oficinaCidade: document.getElementById('formOficinaCidade').value,
+        OficinaCidade: document.getElementById('formOficinaCidade').value,
         numeroOS: document.getElementById('formNumeroOS').value,
+        NumeroOS: document.getElementById('formNumeroOS').value,
         valorTotal: calculatedTotal,
-        descricaoServico: lines.join('\n') || 'Intervenção de Manutenção'
+        ValorTotal: calculatedTotal,
+        descricaoServico: lines.join('\n') || 'Intervenção de Manutenção',
+        DescricaoServico: lines.join('\n') || 'Intervenção de Manutenção'
       };
 
       if (logId) {
         const log = state.logs.find(l => String(l.ID || l.id) === String(logId));
         if (log) {
-          Object.assign(log, {
-            Data: logData.data, KM: logData.km, TipoManutencao: logData.tipoManutencao,
-            OficinaNome: logData.oficinaNome, OficinaCNPJ: logData.oficinaCNPJ, OficinaCidade: logData.oficinaCidade,
-            NumeroOS: logData.numeroOS, ValorTotal: logData.valorTotal, DescricaoServico: logData.descricaoServico
-          });
+          Object.assign(log, logData);
         }
         if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run.updateMaintenanceLog(logData);
+          google.script.run
+            .withSuccessHandler(() => {
+              loadData();
+            })
+            .updateMaintenanceLog(logData);
         }
       } else {
         const newId = 'LOG-' + Date.now();
-        const newLog = {
-          ID: newId, VeiculoID: logData.veiculoId, Placa: logData.placa, Data: logData.data, KM: logData.km,
-          TipoManutencao: logData.tipoManutencao, OficinaNome: logData.oficinaNome, OficinaCNPJ: logData.oficinaCNPJ,
-          OficinaCidade: logData.oficinaCidade, NumeroOS: logData.numeroOS, ValorTotal: logData.valorTotal, DescricaoServico: logData.descricaoServico
-        };
-        state.logs.push(newLog);
+        logData.id = newId;
+        logData.ID = newId;
+        state.logs.push(logData);
         if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run.addMaintenanceLog(logData);
+          google.script.run
+            .withSuccessHandler(() => {
+              loadData();
+            })
+            .addMaintenanceLog(logData);
         }
       }
 
@@ -2733,8 +2780,7 @@ function promptEditKm() {
       closeMaintenanceModal();
       renderCurrentVehicleView();
     }
-
-    function deleteMaintenanceLog(logId) {
+function deleteMaintenanceLog(logId) {
       if (!confirm('Deseja realmente excluir este registro de manutenção?')) return;
 
       state.logs = state.logs.filter(l => String(l.ID || l.id) !== String(logId));
