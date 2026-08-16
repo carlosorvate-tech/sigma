@@ -1568,7 +1568,7 @@ function setupDropzoneHandlers() {
             }
 
             // Tentar extrair descrição detalhada do produto dentro do PDF
-            const prodLineMatch = fullText.match(/(?:PRODUTO|DESCRI[CÇ][AÃ]O|ITEM)[s:]*([A-Z0-9s-/.]{4,60})/i);
+            const prodLineMatch = fullText.match(/(?:PRODUTO|DESCRI[CÇ][AÃ]O|ITEM)[\s:]*([A-Za-z0-9\s\-/.]{4,60})/i);
             if (prodLineMatch && (!extractedDesc || extractedDesc.length < 3)) {
               extractedDesc = prodLineMatch[1].trim();
             }
