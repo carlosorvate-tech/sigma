@@ -1514,16 +1514,39 @@
     async function handlePdfOrImageFallback(file, base64Data, callback) {
       let count = 0;
       let numDoc = '';
+      let extractedPrice = 0;
+      let extractedDesc = '';
+      let extractedEmitente = '';
+      let extractedCNPJ = '';
 
-      const nameMatch = file.name.match(/(?:OS|NF|RECIBO|DOC)?[_\s-]*(\d{4,8})/i);
+      const nameMatch = file.name.match(/(?:OS|NF|RECIBO|DOC|INVOICE)?[_\s-]*(\d{4,18})/i);
       if (nameMatch) {
         numDoc = nameMatch[1];
       }
 
-      // Se for PDF e temos pdfjsLib carregado, tentar extrair texto vetorial limpo
+      // Extrair descrição limpa do nome do arquivo se for formato "invoice-XXXXX descricao.pdf"
+      const cleanNameOnly = file.name.replace(/\.[^/.]+$/, "");
+      const invoiceNameMatch = cleanNameOnly.match(/^invoice-\d+\s*(.*)$/i);
+      if (invoiceNameMatch && invoiceNameMatch[1]) {
+        extractedDesc = invoiceNameMatch[1].trim();
+      }
+
+      // Se for PDF e temos pdfjsLib carregado, converter Base64 para Uint8Array e extrair texto
       if (file.name.toLowerCase().endsWith('.pdf') && typeof pdfjsLib !== 'undefined') {
         try {
-          const loadingTask = pdfjsLib.getDocument(base64Data);
+          let binaryString = '';
+          if (base64Data.indexOf(';base64,') > -1) {
+            binaryString = atob(base64Data.split(';base64,')[1]);
+          } else {
+            binaryString = atob(base64Data);
+          }
+
+          const uint8Array = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            uint8Array[i] = binaryString.charCodeAt(i);
+          }
+
+          const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
           const pdf = await loadingTask.promise;
           let fullText = '';
 
@@ -1531,34 +1554,89 @@
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
             const pageStrings = textContent.items.map(item => item.str);
-            fullText += pageStrings.join('\n') + '\n';
+            fullText += pageStrings.join(' ') + '\n';
           }
 
-          if (fullText.trim().length > 20) {
+          if (fullText.trim().length > 10) {
+            // Extrair CNPJ
+            const cnpjMatch = fullText.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
+            if (cnpjMatch) extractedCNPJ = cnpjMatch[0];
+
+            // Extrair Emitente
+            const emitMatch = fullText.match(/(?:RECEBEMOS DE|EMITENTE|RAZ[AÃ]O SOCIAL|NOME)[\s:]*([A-Z0-9\s\.\-]{4,40})/i);
+            if (emitMatch) extractedEmitente = emitMatch[1].trim();
+
+            // Extrair Valor Total da Nota / Produtos (formato R$ 123,45 ou 123,45)
+            const valorMatch = fullText.match(/(?:VALOR TOTAL DA NOTA|VALOR DO DOCUMENTO|VALOR TOTAL DOS PRODUTOS|VALOR TOTAL|TOTAL)\s*[:=]?\s*(?:R\$\s*)?([\d.]+[,.]\d{2})/i) ||
+                               fullText.match(/R\$\s*([\d.]+[,.]\d{2})/i);
+            if (valorMatch) {
+              const vStr = valorMatch[1].replace(/\./g, '').replace(',', '.');
+              const parsedVal = parseFloat(vStr);
+              if (!isNaN(parsedVal) && parsedVal > 0) extractedPrice = parsedVal;
+            }
+
+            // Tentar extrair linhas canônicas da NF-e
             const res = parseCleanTextLines(fullText, numDoc);
-            count = res.count;
-            if (res.numDoc) numDoc = res.numDoc;
+            if (res.count > 0) {
+              count = res.count;
+              if (res.numDoc) numDoc = res.numDoc;
+            }
           }
         } catch (e) {
-          console.warn('Extração PDF.js não aplicável (documento escaneado/imagem):', e);
+          console.warn('Erro ao processar PDF via PDF.js:', e);
         }
       }
 
-      // Se não extraiu linhas (ex: imagem ou PDF escaneado sem chave de IA ativa)
+      // Preencher campos do formulário se encontrados
+      if (extractedCNPJ && !document.getElementById('formOficinaCNPJ').value) {
+        document.getElementById('formOficinaCNPJ').value = extractedCNPJ;
+      }
+      if (extractedEmitente && !document.getElementById('formOficinaNome').value) {
+        document.getElementById('formOficinaNome').value = extractedEmitente.toUpperCase();
+      }
+
+      // Se não extraiu itens tabulares, criar o item específico da Nota Fiscal / Peça
       if (count === 0) {
+        let finalDesc = extractedDesc || cleanNameOnly;
+        finalDesc = finalDesc.replace(/^invoice[-_\s]*/i, '').replace(/^\d+[-_\s]*/i, '').trim();
+        if (!finalDesc) finalDesc = cleanNameOnly;
+
+        let cat = 'Peça';
+        let sub = 'Motor/Trem de Força';
+        const lower = finalDesc.toLowerCase();
+
+        if (lower.includes('oleo') || lower.includes('óleo') || lower.includes('fluido') || lower.includes('aditivo') || lower.includes('arrefecime')) {
+          cat = 'Óleo/Fluido';
+        } else if (lower.includes('mao de obra') || lower.includes('mão de obra') || lower.includes('servico') || lower.includes('serviço')) {
+          cat = 'Mão de Obra';
+        } else if (lower.includes('retifica') || lower.includes('retífica') || lower.includes('usinagem')) {
+          cat = 'Retífica';
+        } else if (lower.includes('limpeza') || lower.includes('flush') || lower.includes('gas') || lower.includes('combustivel')) {
+          cat = 'Insumo';
+        }
+
+        if (lower.includes('arrefecime') || lower.includes('radiador') || lower.includes('valvula termostatica') || lower.includes('bomba de agua') || lower.includes('bomba de água') || lower.includes('trocador de calor')) {
+          sub = 'Arrefecimento';
+        } else if (lower.includes('cambio') || lower.includes('câmbio') || lower.includes('atf') || lower.includes('transmissao') || lower.includes('transmissão')) {
+          sub = 'Transmissão';
+        } else if (lower.includes('freio') || lower.includes('pastilha') || lower.includes('disco')) {
+          sub = 'Freios';
+        } else if (lower.includes('bieleta') || lower.includes('bucha') || lower.includes('suspensao') || lower.includes('suspensão') || lower.includes('amortecedor')) {
+          sub = 'Suspensão/Direção';
+        }
+
         addMultiItemRow({
-          desc: `Documento Anexado: ${file.name.replace(/\.[^/.]+$/, "")}`,
-          valor: 0.00,
-          tipo: "Peça",
-          subsistema: "Motor/Trem de Força"
+          desc: finalDesc.toUpperCase(),
+          valor: extractedPrice || 0.00,
+          tipo: cat,
+          subsistema: sub
         });
         count = 1;
       }
 
       if (callback) callback(count, numDoc);
     }
-
-    function parseCleanTextLines(textContent, defaultNumDoc) {
+function parseCleanTextLines(textContent, defaultNumDoc) {
       let count = 0;
       let numDoc = defaultNumDoc || '';
 
@@ -1790,7 +1868,251 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       updateDynamicHealthGauge();
       lucide.createIcons();
     }
-function updateDynamicHealthGauge() {
+
+    function buildDynamicPrescriptivePlan(v) {
+      if (!v) {
+        state.prescriptivePlan = [];
+        return;
+      }
+
+      const vId = String(v.ID || v.id || '');
+      const vPlaca = String(v.PlacaChassi || v.placaChassi || v.Placa || v.placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      const vKmAtual = Number(v.KMAtual !== undefined ? v.KMAtual : (v.kmAtual !== undefined ? v.kmAtual : 0));
+      const regimeUso = String(v.RegimeUso || v.regimeUso || 'SEVERO_URBANO');
+      const multKm = regimeUso.includes('SEVERO') ? 0.8 : 1.0;
+
+      // Matriz Prescritiva Oficial Homologada (Conforme Manual Oficial Citroën C4 Pallas)
+      const defaultItems = [
+        {
+          intervencao: 'Substituição do Óleo do Motor e Filtro de Óleo',
+          subsistema: 'Motor/Trem de Força',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(10000 * multKm),
+          intervalo_meses: 12,
+          especificacao_tecnica: 'Sintético 10W40 API SN / Quartz 7000 PSA B71 2294',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'Sem registro de troca de óleo no histórico do ativo. Risco de borra e desgaste prematuro de bronzinas e comando.',
+          palavrasChave: ['oleo', 'óleo', 'filtro de oleo', 'filtro de óleo', 'lubrificante', 'troca de oleo', 'troca de óleo']
+        },
+        {
+          intervencao: 'Substituição do Filtro de Combustível de Linha (FLEX)',
+          subsistema: 'Motor/Trem de Força',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(20000 * multKm),
+          intervalo_meses: 12,
+          especificacao_tecnica: 'Filtro Blindado de Linha 5.0 Bar / PSA KL581',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'Sem registro de substituição do filtro de combustível. Risco de sobrecarga na bomba e bicos injetores.',
+          palavrasChave: ['filtro de combustivel', 'filtro de combustível', 'combustivel', 'combustível']
+        },
+        {
+          intervencao: 'Substituição do Filtro de Ar do Motor',
+          subsistema: 'Motor/Trem de Força',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(20000 * multKm),
+          intervalo_meses: 12,
+          especificacao_tecnica: 'Elemento Filtrante de Ar de Alto Fluxo PSA',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'Sem registro de substituição do filtro de ar. Saturação provoca perda de torque e aumento de consumo.',
+          palavrasChave: ['filtro de ar', 'elemento filtrante']
+        },
+        {
+          intervencao: 'Substituição do Filtro de Ar Condicionado (Cabine)',
+          subsistema: 'Elétrica/Eletrônica',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(30000 * multKm),
+          intervalo_meses: 12,
+          especificacao_tecnica: 'Filtro de Cabine Antipólen / Carvão Ativado',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'Sem registro de troca do filtro de cabine e higienização do sistema de climatização.',
+          palavrasChave: ['ar condicionado', 'cabine', 'higienizacao', 'higienização', 'polen', 'pólen']
+        },
+        {
+          intervencao: 'Substituição das Velas de Ignição',
+          subsistema: 'Motor/Trem de Força',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(50000 * multKm),
+          intervalo_meses: 24,
+          especificacao_tecnica: 'Jogo de Velas Bosch/NGK Grau Térmico Original PSA EW10A',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'Sem histórico documental de troca de velas. Eletrodos gastos sobrecarregam a régua da bobina de ignição.',
+          palavrasChave: ['vela', 'velas', 'ignicao', 'ignição', 'jogo de velas']
+        },
+        {
+          intervencao: 'Substituição do Kit de Correia Dentada (Distribuição)',
+          subsistema: 'Motor/Trem de Força',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(70000 * multKm),
+          intervalo_meses: 60,
+          especificacao_tecnica: 'Kit Correia Dentada HNBR + 2 Rolamentos Tensores Originais PSA',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'CRÍTICO DESTRUTIVO: Sem comprovação documental de troca da correia de distribuição. O rompimento colide válvulas com pistões.',
+          palavrasChave: ['correia dentada', 'distribuicao', 'distribuição', 'kit correia', 'tensor']
+        },
+        {
+          intervencao: 'Sistema de Arrefecimento Completo (Bomba, Válvula, Trocador, Aditivo)',
+          subsistema: 'Arrefecimento',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(40000 * multKm),
+          intervalo_meses: 24,
+          especificacao_tecnica: 'Aditivo Orgânico Concentrado Rosa PSA B71 5110 + Água Desmineralizada 50/50',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'CRÍTICO DESTRUTIVO: Motor EW10A em alumínio sensível ao superaquecimento. Falhas queimam a junta do cabeçote.',
+          palavrasChave: ['arrefecimento', 'bomba d', 'bomba de agua', 'bomba de água', 'valvula termostatica', 'válvula termostática', 'trocador de calor', 'aditivo', 'radiador', 'retifica', 'cabeçote', 'cabecote', 'carcaca da valvula', 'mangueira']
+        },
+        {
+          intervencao: 'Fluido ATF Câmbio Automático AL4 & Eletroválvulas',
+          subsistema: 'Transmissão',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(40000 * multKm),
+          intervalo_meses: 36,
+          especificacao_tecnica: 'Mobil ATF LT 71141 / Total Fluide XLD FE (Troca Parcial Aditiva 3.5L)',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'CRÍTICO DESTRUTIVO: Câmbio AL4 sofre desvio de pressão por fluido degradado. Causa trancos e travamento em emergência.',
+          palavrasChave: ['atf', 'cambio', 'câmbio', 'transmissao', 'transmissão', 'eletrovalvula', 'eletroválvula', 'solenoide']
+        },
+        {
+          intervencao: 'Substituição Completa do Fluido de Freio Sintético (DOT 4)',
+          subsistema: 'Freios',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(20000 * multKm),
+          intervalo_meses: 24,
+          especificacao_tecnica: 'Fluido Sintético DOT 4 Alta Temperatura / Baixa Viscosidade ABS/ESP',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'Fluido higroscópico. Absorção de umidade gera vapor lock em frenagens prolongadas e oxidação do módulo ABS.',
+          palavrasChave: ['fluido de freio', 'dot 4', 'dot4', 'pastilha', 'disco de freio']
+        },
+        {
+          intervencao: 'Suspensão, Articulações, Bieletas e Buchas de Bandeja',
+          subsistema: 'Suspensão/Direção',
+          tipo: 'PREVENTIVA',
+          intervalo_km: Math.round(30000 * multKm),
+          intervalo_meses: 12,
+          especificacao_tecnica: 'Bieletas Reforçadas, Buchas Hidráulicas Traseiras da Bandeja e Coxins Superiores',
+          origem_fonte: 'MANUAL_OEM_FABRICANTE',
+          texto_precaucao: 'Inspeção de folgas nas rótulas, bieletas e coifas para prevenir desalinhamento e estalos na direção.',
+          palavrasChave: ['bieleta', 'bucha', 'bandeja', 'pivo', 'pivô', 'amortecedor', 'coxim', 'alinhamento', 'balanceamento', 'suspensao', 'suspensão']
+        }
+      ];
+
+      // Mesclar com Prescrições Customizadas Salvas
+      const customItems = (state.customPrescriptions || []).filter(p => {
+        return String(p.VeiculoID || p.veiculoId || '') === vId;
+      });
+
+      const mergedMap = new Map();
+
+      defaultItems.forEach(item => {
+        const key = (item.subsistema + '__' + item.intervencao).toUpperCase();
+        mergedMap.set(key, item);
+      });
+
+      customItems.forEach(c => {
+        const intervencao = c.Intervencao || c.intervencao || '';
+        const subsistema = c.Subsistema || c.subsistema || 'Motor/Trem de Força';
+        const key = (subsistema + '__' + intervencao).toUpperCase();
+        
+        mergedMap.set(key, {
+          dbId: c.ID || c.id || '',
+          intervencao: intervencao,
+          subsistema: subsistema,
+          tipo: c.Tipo || c.tipo || 'PREVENTIVA',
+          intervalo_km: Number(c.IntervaloKM || c.intervalo_km || 10000),
+          intervalo_meses: Number(c.IntervaloMeses || c.intervalo_meses || 12),
+          especificacao_tecnica: c.EspecificacaoTecnica || c.especificacao_tecnica || 'Conforme especificação documental',
+          origem_fonte: c.OrigemFonte || c.origem_fonte || 'MANTENEDOR_ESPECIALISTA',
+          texto_precaucao: c.TextoPrecaucao || c.texto_precaucao || 'Diretriz técnica sob acompanhamento.',
+          palavrasChave: [intervencao.toLowerCase()]
+        });
+      });
+
+      // Cruzar com os registros de manutenção (state.logs)
+      const vehicleLogs = (state.logs || []).filter(l => {
+        const lVId = String(l.VeiculoID || l.veiculoId || '');
+        const lPlaca = String(l.Placa || l.placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        return (lVId && lVId === vId) || (lPlaca && vPlaca && lPlaca === vPlaca);
+      });
+
+      let cntEmDia = 0;
+      let cntCritico = 0;
+      let cntAlerta = 0;
+
+      const calculatedPlan = Array.from(mergedMap.values()).map(item => {
+        const keywords = item.palavrasChave || [item.intervencao.toLowerCase()];
+        
+        let latestLog = null;
+        for (let log of vehicleLogs) {
+          const desc = String(log.DescricaoServico || log.descricaoServico || '').toLowerCase();
+          const sub = String(log.Subsistema || log.subsistema || '').toLowerCase();
+          
+          const match = keywords.some(kw => desc.includes(kw.toLowerCase())) || 
+                        (sub && sub === item.subsistema.toLowerCase() && desc.length > 5);
+          
+          if (match) {
+            if (!latestLog || (Number(log.KM || log.km || 0) > Number(latestLog.KM || latestLog.km || 0))) {
+              latestLog = log;
+            }
+          }
+        }
+
+        const intervalKm = Number(item.intervalo_km || 10000);
+
+        let kmExec = null;
+        let proxKm = null;
+        let faltKm = null;
+        let status = 'CRITICO_SEM_HISTORICO';
+        let statusClass = 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        let statusTexto = '⚠️ CRÍTICO - SEM HISTÓRICO COMPROVADO (MARCO ZERO NECESSÁRIO)';
+
+        if (latestLog) {
+          kmExec = Number(latestLog.KM || latestLog.km || 0);
+          proxKm = kmExec + intervalKm;
+          faltKm = proxKm - vKmAtual;
+
+          if (faltKm > 1000) {
+            status = 'EM_DIA';
+            statusClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            statusTexto = '✅ EM DIA';
+            cntEmDia++;
+          } else if (faltKm > 0) {
+            status = 'ALERTA';
+            statusClass = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+            statusTexto = '⚠️ ATENÇÃO - PRÓXIMO DO VENCIMENTO';
+            cntAlerta++;
+          } else {
+            status = 'ALERTA_VENCIDO';
+            statusClass = 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            statusTexto = '🚨 VENCIDO - REQUER MANUTENÇÃO';
+            cntCritico++;
+          }
+        } else {
+          cntCritico++;
+        }
+
+        return {
+          ...item,
+          km_ultima_execucao: kmExec,
+          proxima_km: proxKm,
+          km_faltante: faltKm,
+          status: status,
+          statusClass: statusClass,
+          statusTexto: statusTexto
+        };
+      });
+
+      // Atualizar badges numéricos no topo
+      const elemEmDia = document.getElementById('cntEmDia');
+      const elemCritico = document.getElementById('cntCritico');
+      const elemAlerta = document.getElementById('cntAlerta');
+
+      if (elemEmDia) elemEmDia.innerText = cntEmDia;
+      if (elemCritico) elemCritico.innerText = cntCritico;
+      if (elemAlerta) elemAlerta.innerText = cntAlerta;
+
+      state.prescriptivePlan = calculatedPlan;
+    }
+
+    function updateDynamicHealthGauge() {
       const v = getSelectedVehicle();
       const plan = state.prescriptivePlan || [];
       const scoreElem = document.getElementById('scoreValue');
