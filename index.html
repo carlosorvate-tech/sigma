@@ -1671,7 +1671,111 @@ function setupDropzoneHandlers() {
 
       if (callback) callback(count, numDoc);
     }
-function parseDocumentTextContentBatch(file, textContent) {
+
+    function parseNfeXmlBatch(xmlText, fileName) {
+      let count = 0;
+      let numDoc = '';
+
+      try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+
+        // 1. Dados do Emitente (Oficina / Autopeças)
+        const xNome = xmlDoc.querySelector("emit > xNome")?.textContent || 
+                      xmlDoc.querySelector("emit > xFant")?.textContent || 
+                      xmlDoc.querySelector("xNome")?.textContent || "";
+        
+        const cnpj = xmlDoc.querySelector("emit > CNPJ")?.textContent || 
+                     xmlDoc.querySelector("CNPJ")?.textContent || "";
+        
+        const cnpjFormatted = cnpj ? cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : "";
+        const xMun = xmlDoc.querySelector("enderEmit > xMun")?.textContent || xmlDoc.querySelector("xMun")?.textContent || "";
+        const uf = xmlDoc.querySelector("enderEmit > UF")?.textContent || xmlDoc.querySelector("UF")?.textContent || "";
+        const cidadeUf = (xMun && uf) ? `${xMun} - ${uf}` : (xMun || uf);
+
+        // 2. Número do Documento e Data
+        numDoc = xmlDoc.querySelector("ide > nNF")?.textContent || xmlDoc.querySelector("nNF")?.textContent || "";
+        const dhEmi = xmlDoc.querySelector("ide > dhEmi")?.textContent || xmlDoc.querySelector("ide > dEmi")?.textContent || xmlDoc.querySelector("dhEmi")?.textContent || "";
+
+        if (xNome && !document.getElementById('formOficinaNome').value) {
+          document.getElementById('formOficinaNome').value = xNome.toUpperCase();
+        }
+        if (cnpjFormatted && !document.getElementById('formOficinaCNPJ').value) {
+          document.getElementById('formOficinaCNPJ').value = cnpjFormatted;
+        }
+        if (cidadeUf && !document.getElementById('formOficinaCidade').value) {
+          document.getElementById('formOficinaCidade').value = cidadeUf.toUpperCase();
+        }
+        if (dhEmi && !document.getElementById('formData').value) {
+          document.getElementById('formData').value = dhEmi.split('T')[0];
+        }
+
+        // 3. Leitura dos Itens / Produtos / Serviços da NF-e
+        const detNodes = xmlDoc.querySelectorAll("det");
+        detNodes.forEach(det => {
+          const xProd = det.querySelector("prod > xProd")?.textContent || det.querySelector("xProd")?.textContent || "";
+          const vProd = Number(det.querySelector("prod > vProd")?.textContent || det.querySelector("vProd")?.textContent || 0);
+
+          if (xProd) {
+            let tipo = "Peça";
+            let sub = "Motor/Trem de Força";
+            const lower = xProd.toLowerCase();
+
+            // Mapeamento de Tipo
+            if (lower.includes("mao de obra") || lower.includes("servico") || lower.includes("m.o") || lower.includes("montagem") || lower.includes("reforma")) {
+              tipo = "Mão de Obra";
+            } else if (lower.includes("oleo") || lower.includes("óleo") || lower.includes("fluido") || lower.includes("aditivo") || lower.includes("lubrificante") || lower.includes("liquido") || lower.includes("líquido")) {
+              tipo = "Óleo/Fluido";
+            } else if (lower.includes("retifica") || lower.includes("retífica") || lower.includes("usinagem")) {
+              tipo = "Retífica";
+            } else if (lower.includes("limpeza") || lower.includes("flush") || lower.includes("gas") || lower.includes("combustivel") || lower.includes("combustível")) {
+              tipo = "Insumo";
+            }
+
+            // Mapeamento de Subsistema
+            if (lower.includes("arrefecime") || lower.includes("radiador") || lower.includes("valvula termostatica") || lower.includes("válvula termostática") || lower.includes("bomba de agua") || lower.includes("bomba de água") || lower.includes("trocador de calor") || lower.includes("mangueir") || lower.includes("carcaca") || lower.includes("carcaça")) {
+              sub = "Arrefecimento";
+            } else if (lower.includes("cambio") || lower.includes("câmbio") || lower.includes("atf") || lower.includes("transmissao") || lower.includes("transmissão") || lower.includes("solenoide") || lower.includes("eletrovalvula")) {
+              sub = "Transmissão";
+            } else if (lower.includes("freio") || lower.includes("pastilha") || lower.includes("disco") || lower.includes("dot 4") || lower.includes("dot4")) {
+              sub = "Freios";
+            } else if (lower.includes("bieleta") || lower.includes("bucha") || lower.includes("suspensao") || lower.includes("suspensão") || lower.includes("amortecedor") || lower.includes("coxim")) {
+              sub = "Suspensão/Direção";
+            } else if (lower.includes("bateria") || lower.includes("vela") || lower.includes("alternador") || lower.includes("bobina")) {
+              sub = "Elétrica/Eletrônica";
+            } else if (lower.includes("fluido") || lower.includes("aditivo") || lower.includes("flush") || lower.includes("limpeza")) {
+              sub = "Fluidos/Insumos";
+            }
+
+            addMultiItemRow({
+              desc: xProd.toUpperCase(),
+              valor: vProd,
+              tipo: tipo,
+              subsistema: sub
+            });
+            count++;
+          }
+        });
+
+        // Se a NF não trouxe itens tabulados, adiciona total da NF
+        if (count === 0) {
+          const vNF = Number(xmlDoc.querySelector("vNF")?.textContent || xmlDoc.querySelector("vProd")?.textContent || 0);
+          addMultiItemRow({ 
+            desc: `Manutenção Conforme NF-e #${numDoc || fileName.replace(/\.[^/.]+$/, "")}`, 
+            valor: vNF, 
+            tipo: "Peça",
+            subsistema: "Motor/Trem de Força"
+          });
+          count = 1;
+        }
+      } catch (err) {
+        console.error('Erro ao processar arquivo XML:', err);
+      }
+
+      return { itemCount: count, numDoc: numDoc };
+    }
+
+    function parseDocumentTextContentBatch(file, textContent) {
       let count = 0;
       let numDoc = '';
 
