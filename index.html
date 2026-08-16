@@ -3347,49 +3347,28 @@ function deleteMaintenanceLog(logId) {
         });
       }
 
-      const totalPages = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFillColor(241, 245, 249);
-        doc.rect(0, pageHeight - 16, pageWidth, 16, 'F');
-        
-        doc.setTextColor(15, 23, 42);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.text('DECLARAÇÃO DOS 3 PILARES SIGMA:', margin, pageHeight - 11);
-
-        doc.setTextColor(71, 85, 105);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.text('1. PRESERVAÇÃO DO ATIVO VEICULAR   |   2. PREVENÇÃO CONTRA FALHAS GRAVES E DESTRUTIVAS   |   3. AUDITORIA FINANCEIRA E HISTÓRICO CAUSAL', margin, pageHeight - 6);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.setTextColor(14, 165, 233);
-        doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
-      }
-
-      
       // 3. CONTAINER DE AUDITORIA FORENSE & HASH SHA-256 (LEI 12.965/2014 - MARCO CIVIL DA INTERNET)
-      checkNewPage(30);
+      checkNewPage(32);
       y += 4;
       doc.setDrawColor(203, 213, 225);
-      doc.setLineWidth(0.6);
+      doc.setLineWidth(0.5);
       doc.line(margin, y, pageWidth - margin, y);
       y += 5;
 
-      doc.setFillColor(241, 245, 249);
-      doc.roundedRect(margin, y, printWidth, 22, 2, 2, 'F');
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(margin, y, printWidth, 26, 2, 2, 'FD');
       
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(15, 23, 42);
-      doc.text('AUDITORIA FORENSE & FIDELIDADE DECLARATÓRIA (LEI 12.965/2014 - MARCO CIVIL DA INTERNET)', margin + 4, y + 5);
+      doc.text('AUDITORIA FORENSE & FIDELIDADE DECLARATÓRIA (LEI 12.965/2014 - MARCO CIVIL DA INTERNET)', margin + 4, y + 5.5);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(71, 85, 105);
-      doc.text('Este dossiê constitui documento técnico consolidado de gestão de manutenção veicular. Os pareceres prescritivos possuem caráter consultivo e probabilístico, condicionados à fidedignidade dos dados declarados pelo usuário.', margin + 4, y + 10, { maxWidth: printWidth - 8 });
+      doc.text('Este dossiê constitui documento técnico consolidado de gestão de manutenção veicular. Os pareceres prescritivos possuem caráter consultivo e probabilístico, condicionados à fidedignidade dos dados declarados pelo usuário.', margin + 4, y + 10.5, { maxWidth: printWidth - 8 });
 
       // Geração de Hash SHA-256 Forense
       const rawHashStr = `${v.ID || 'VEH'}_${v.KMAtual || 0}_${new Date().getTime()}`;
@@ -3406,11 +3385,45 @@ function deleteMaintenanceLog(logId) {
       const dataEmissaoFull = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(14, 165, 233);
-      doc.text(`[ AUTENTICIDADE FORENSE: SHA256-${hashDoc} • EMISSÃO: ${dataEmissaoFull} • INFOSYS: SIGMA v1.0 • INFINITUS SISTEMAS INTELIGENTES LTDA ]`, margin + 4, y + 18);
+      doc.setFontSize(7);
+      doc.setTextColor(2, 132, 199);
+      doc.text(`[ AUTENTICIDADE FORENSE: SHA256-${hashDoc} • EMISSÃO: ${dataEmissaoFull} ]`, margin + 4, y + 18.5);
 
-      y += 26;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`SISTEMA SIGMA CMMS v32.0 • TECNOLOGIA INFINITUS SISTEMAS INTELIGENTES LTDA (CNPJ: 09.371.580/0001-06)`, margin + 4, y + 22.5);
+
+      y += 30;
+
+      // 4. RODAPÉ INSTITUCIONAL (APLICADO EM TODAS AS PÁGINAS NO FINAL)
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFillColor(248, 250, 252);
+        doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+        
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.4);
+        doc.line(0, pageHeight - 15, pageWidth, pageHeight - 15);
+
+        // Linha 1 do Rodapé: Título à esquerda | Página à direita
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.text('DECLARAÇÃO DOS 3 PILARES SIGMA:', margin, pageHeight - 9.5);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.8);
+        doc.setTextColor(2, 132, 199);
+        doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 9.5, { align: 'right' });
+
+        // Linha 2 do Rodapé: Descrição dos 3 Pilares
+        doc.setTextColor(100, 116, 139);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.2);
+        doc.text('1. PRESERVAÇÃO DO ATIVO VEICULAR   •   2. PREVENÇÃO CONTRA FALHAS GRAVES E DESTRUTIVAS   •   3. AUDITORIA FINANCEIRA E HISTÓRICO CAUSAL', margin, pageHeight - 5);
+      }
 
       doc.save(`SIGMA_Dossie_${v.PlacaChassi || v.Placa}_${new Date().toISOString().split('T')[0]}.pdf`);
     }
