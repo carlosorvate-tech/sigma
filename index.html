@@ -1694,22 +1694,30 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       selectors.forEach(select => {
         if (!select) return;
 
-        if (state.vehicles.length === 0) {
+        if (!state.vehicles || state.vehicles.length === 0) {
           select.innerHTML = '<option value="">Nenhum Veículo</option>';
           return;
         }
 
         select.innerHTML = state.vehicles.map(v => {
-          const marca = v.Marca || '';
-          const modelo = v.Modelo || '';
-          const placa = v.PlacaChassi || v.Placa || '';
-          const text = [marca, modelo].filter(Boolean).join(' ') || 'Veículo';
+          const vId = v.ID || v.id || '';
+          const marca = v.Marca || v.marca || '';
+          const modelo = v.Modelo || v.modelo || '';
+          const placa = v.PlacaChassi || v.placaChassi || v.Placa || v.placa || '';
+          let text = [marca, modelo].filter(Boolean).join(' ');
+          if (!text) text = `Veículo ${vId}`;
+          const placaText = placa ? ` (${placa})` : '';
+          const isSelected = String(vId) === String(state.selectedVehicleId);
           return `
-            <option value="${v.ID}" ${String(v.ID) === String(state.selectedVehicleId) ? 'selected' : ''}>
-              ${text} (${placa})
+            <option value="${vId}" ${isSelected ? 'selected' : ''}>
+              ${text}${placaText}
             </option>
           `;
         }).join('');
+
+        if (state.selectedVehicleId) {
+          select.value = state.selectedVehicleId;
+        }
       });
     }
 
@@ -1720,7 +1728,8 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
     }
 
     function getSelectedVehicle() {
-      return state.vehicles.find(v => String(v.ID) === String(state.selectedVehicleId)) || state.vehicles[0] || null;
+      if (!state.vehicles || state.vehicles.length === 0) return null;
+      return state.vehicles.find(v => String(v.ID || v.id) === String(state.selectedVehicleId)) || state.vehicles[0] || null;
     }
 
     function renderCurrentVehicleView() {
@@ -1746,291 +1755,42 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
         return;
       }
 
-      const vMarca = v.Marca || '';
-      const vModelo = v.Modelo || '';
-      const vMotor = v.Motorizacao ? `(${v.Motorizacao})` : '';
-      const fullTitle = [vMarca, vModelo, vMotor].filter(Boolean).join(' ') || 'Veículo Cadastrado';
+      // Sincronizar selectedVehicleId se necessário
+      if (!state.selectedVehicleId || state.selectedVehicleId !== (v.ID || v.id)) {
+        state.selectedVehicleId = v.ID || v.id;
+      }
 
-      document.getElementById('vehiclePlate').innerText = v.PlacaChassi || v.Placa || '---';
-      document.getElementById('vehicleCombustivel').innerText = v.Combustivel || 'FLEX';
-      document.getElementById('vehicleTransmissao').innerText = v.TipoTransmissao || 'Automático';
-      document.getElementById('vehicleRegimeBadge').innerText = v.RegimeUso || 'SEVERO_URBANO';
-      document.getElementById('vehicleTitle').innerText = fullTitle;
-      document.getElementById('vehicleSub').innerText = `Ano ${v.AnoFabricacao || 2009}/${v.AnoModelo || 2009} • ${v.TipoDistribuicao || 'Correia Dentada'}`;
-      
-      const currentKmNum = Number(v.KMAtual || 0);
-      document.getElementById('vehicleKmText').innerText = `${currentKmNum.toLocaleString('pt-BR')} KM`;
+      const vMarca = v.Marca || v.marca || '';
+      const vModelo = v.Modelo || v.modelo || '';
+      const vPlaca = v.PlacaChassi || v.placaChassi || v.Placa || v.placa || '---';
+      const vComb = v.Combustivel || v.combustivel || 'FLEX';
+      const vTrans = v.TipoTransmissao || v.tipoTransmissao || 'Automático Convencional';
+      const vRegime = v.RegimeUso || v.regimeUso || 'SEVERO_URBANO';
+      const vDist = v.TipoDistribuicao || v.tipoDistribuicao || 'Correia Dentada';
+      const vAnoFab = v.AnoFabricacao || v.anoFabricacao || 2009;
+      const vAnoMod = v.AnoModelo || v.anoModelo || 2009;
+      const vKm = v.KMAtual !== undefined ? v.KMAtual : (v.kmAtual !== undefined ? v.kmAtual : 0);
 
-      const vLogs = deduplicateLogsList(state.logs.filter(l => String(l.VeiculoID) === String(v.ID) || String(l.Placa) === String(v.PlacaChassi)));
-      const lastLog = vLogs.length > 0 ? vLogs[vLogs.length - 1] : null;
-      document.getElementById('vehicleOficinaText').innerText = lastLog ? (lastLog.OficinaNome || 'Cadastrada em Documento') : 'Nenhuma ocorrência';
+      document.getElementById('vehicleTitle').innerText = [vMarca, vModelo].filter(Boolean).join(' ') || `Veículo ${v.ID || v.id || ''}`;
+      document.getElementById('vehiclePlate').innerText = vPlaca;
+      document.getElementById('vehicleCombustivel').innerText = vComb;
+      document.getElementById('vehicleTransmissao').innerText = vTrans;
+      document.getElementById('vehicleRegimeBadge').innerText = vRegime;
+      document.getElementById('vehicleSub').innerText = `Ano ${vAnoFab}/${vAnoMod} • ${vDist}`;
+      document.getElementById('vehicleKmText').innerText = `${Number(vKm).toLocaleString('pt-BR')} KM`;
 
-      computePrescriptivePlanForVehicle(v);
-      updateDynamicHealthGauge();
+      const vehicleLogs = state.logs.filter(l => String(l.VeiculoID) === String(v.ID || v.id));
+      const ultimaOficina = vehicleLogs.length > 0 ? (vehicleLogs[0].OficinaNome || 'Oficina Registrada') : 'Nenhuma ocorrência';
+      document.getElementById('vehicleOficinaText').innerText = ultimaOficina;
+
+      buildDynamicPrescriptivePlan(v);
+      renderPrescriptiveCards();
       renderLogsTable();
       renderParetoChart();
+      updateDynamicHealthGauge();
+      lucide.createIcons();
     }
-
-    /**
-     * CÁLCULO TOTALMENTE DINÂMICO E RIGOROSO DO PLANO PRESCRITIVO COM MESCLAGEM DE DIRETRIZES
-     */
-    function computePrescriptivePlanForVehicle(v) {
-      if (!v) {
-        state.prescriptivePlan = [];
-        renderPrescriptiveCards();
-        return;
-      }
-
-      const currentKm = Number(v.KMAtual || 0);
-      const targetPlateClean = String(v.PlacaChassi || v.Placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-
-      const vLogs = deduplicateLogsList(state.logs.filter(l => {
-        const lPlateClean = String(l.Placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        return String(l.VeiculoID) === String(v.ID) || lPlateClean === targetPlateClean;
-      }));
-
-      function getLatestExecutionKm(keywords) {
-        if (!vLogs || vLogs.length === 0) return null;
-
-        let maxKm = null;
-        vLogs.forEach(l => {
-          const desc = (l.DescricaoServico || l.Descricao || '').toLowerCase();
-          const kmVal = Number(l.KM || 0);
-
-          const matches = keywords.some(kw => desc.includes(kw.toLowerCase()));
-          if (matches && kmVal > 0) {
-            if (maxKm === null || kmVal > maxKm) {
-              maxKm = kmVal;
-            }
-          }
-        });
-        return maxKm;
-      }
-
-      // 1. CARREGAR ITENS DA PLANILHA PLANO_PRESCRITIVO SALVOS NO BANCO
-      const vCustomItems = (state.customPrescriptions || []).filter(p => String(p.VeiculoID) === String(v.ID));
-
-      const planDefinitions = [
-        {
-          id: 'retifica',
-          onlyIfLogExists: true,
-          intervencao: 'Inspeção & Reaperto de Cabeçote pós-Retífica',
-          subsistema: 'Motor/Trem de Força',
-          intervalo_km: 1000,
-          intervalo_meses: 1,
-          keywords: ['cabeçote', 'cabecote', 'retífica', 'retifica', 'reaperto cabeçote'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Garantia e assentamento de junta de cabeçote pós-retífica. Próxima parada programada.',
-          precaucaoSemHistorico: 'Sem registro de retífica.'
-        },
-        {
-          id: 'oleo',
-          onlyIfLogExists: false,
-          intervencao: 'Substituição do Óleo do Motor e Filtro',
-          subsistema: 'Motor/Trem de Força',
-          intervalo_km: 5000,
-          intervalo_meses: 6,
-          keywords: ['óleo', 'oleo', '10w40', 'quartz', 'filtro de óleo', 'filtro de oleo'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Troca de lubrificante e filtro realizada. Próxima parada programada.',
-          precaucaoSemHistorico: 'Sem registro de troca de óleo no histórico. Recomendada verificação do nível, viscosidade e troca preventiva.'
-        },
-        {
-          id: 'filtro_combustivel',
-          onlyIfLogExists: false,
-          intervencao: 'Substituição do Filtro de Combustível de Linha',
-          subsistema: 'Motor/Trem de Força',
-          intervalo_km: 10000,
-          intervalo_meses: 12,
-          keywords: ['filtro de combustível', 'filtro de combustivel', 'filtro linha'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Filtro de combustível substituído. Próxima parada programada.',
-          precaucaoSemHistorico: 'Sem registro de substituição do filtro de combustível. Recomendada troca preventiva para proteção dos injetores.'
-        },
-        {
-          id: 'velas',
-          onlyIfLogExists: false,
-          intervencao: 'Verificação da Folga de Eletrodos e Velas de Ignição',
-          subsistema: 'Motor/Trem de Força',
-          intervalo_km: 20000,
-          intervalo_meses: 24,
-          keywords: ['vela', 'velas', 'eletrodo', 'ignição', 'ignicao'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Velas de ignição inspecionadas/substituídas. Eficiência de queima e eletrodos conservados.',
-          precaucaoSemHistorico: 'Sem registro de substituição de velas. Recomendada inspeção dos eletrodos para evitar sobrecarga nas bobinas.'
-        },
-        {
-          id: 'arrefecimento',
-          onlyIfLogExists: false,
-          intervencao: 'Sistema de Arrefecimento Completo (Bomba, Válvula, Trocador)',
-          subsistema: 'Arrefecimento',
-          intervalo_km: 40000,
-          intervalo_meses: 24,
-          keywords: ['arrefecimento', 'bomba d\'água', 'bomba d agua', 'bomba dagua', 'termostática', 'termostatica', 'aditivo', 'radiador', 'trocador'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Manutenção no sistema de arrefecimento realizada. Estanqueidade e aditivo validados.',
-          precaucaoSemHistorico: 'Sem registro de manutenção no arrefecimento. Recomendada verificação de estanqueidade e aditivo concentrado.'
-        },
-        {
-          id: 'correia',
-          onlyIfLogExists: false,
-          intervencao: 'Substituição do Kit de Correia Dentada Completo',
-          subsistema: 'Motor/Trem de Força',
-          intervalo_km: 50000,
-          intervalo_meses: 48,
-          keywords: ['correia', 'correia dentada', 'tensionador', 'kit distribuição'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Kit de correia dentada e tensionador substituídos. Integridade do motor preservada.',
-          precaucaoSemHistorico: 'Sem comprovação documental de troca da correia dentada. Componente de risco crítico contra avaria destrutiva.'
-        },
-        {
-          id: 'freios',
-          onlyIfLogExists: false,
-          intervencao: 'Substituição Completa do Fluido de Freio (DOT 4)',
-          subsistema: 'Freios',
-          intervalo_km: 20000,
-          intervalo_meses: 24,
-          keywords: ['fluido de freio', 'dot 4', 'dot4', 'sangria freio', 'pastilha'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Fluido de freio renovado. Ponto de ebulição e estanqueidade validados.',
-          precaucaoSemHistorico: 'Fluido higroscópico sem registro de troca. Recomendada medição da ebulição ou substituição preventiva.'
-        },
-        {
-          id: 'cambio',
-          onlyIfLogExists: false,
-          intervencao: 'Fluido ATF Câmbio Automático AL4',
-          subsistema: 'Transmissão',
-          intervalo_km: 40000,
-          intervalo_meses: 48,
-          keywords: ['câmbio', 'cambio', 'atf', 'al4', 'eletroválvula', 'eletrovalvula'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Fluido de transmissão substituído. Propriedades térmicas e hidráulicas mantidas.',
-          precaucaoSemHistorico: 'Transmissão sensível à degradação térmica do fluido. Recomendada verificação de contaminação e nível.'
-        },
-        {
-          id: 'geometria',
-          onlyIfLogExists: false,
-          intervencao: 'Alinhamento 3D de Geometria e Balanceamento',
-          subsistema: 'Suspensão/Direção',
-          intervalo_km: 10000,
-          intervalo_meses: 6,
-          keywords: ['alinhamento', 'geometria', 'balanceamento', 'pneu', 'suspensão', 'suspensao'],
-          origem_fonte: 'MANUAL_OEM_FABRICANTE',
-          precaucaoComHistorico: 'Geometria 3D e balanceamento aferidos. Desgaste uniforme de pneus.',
-          precaucaoSemHistorico: 'Sem histórico de alinhamento recente. Recomendada aferição de geometria 3D.'
-        }
-      ];
-
-      // ADICIONAR ITENS CUSTOMIZADOS SALVOS DA PLANILHA
-      vCustomItems.forEach(ci => {
-        const interv = ci.Intervencao || ci.intervencao || '';
-        const subsys = ci.Subsistema || ci.subsistema || 'Motor/Trem de Força';
-        const kmVal = parseInt(ci.IntervaloKM || ci.intervalo_km || 10000, 10);
-        const mesesVal = parseInt(ci.IntervaloMeses || ci.intervalo_meses || 12, 10);
-        const orig = ci.OrigemFonte || ci.origem_fonte || 'MANTENEDOR_ESPECIALISTA';
-        const prec = ci.TextoPrecaucao || ci.texto_precaucao || 'Diretriz customizada do mantenedor.';
-
-        // Verificar se já existe na grade base
-        const matchBase = planDefinitions.find(pd => pd.intervencao.toLowerCase() === interv.toLowerCase());
-        if (matchBase) {
-          matchBase.intervalo_km = kmVal;
-          matchBase.intervalo_meses = mesesVal;
-          matchBase.origem_fonte = orig;
-          matchBase.precaucaoSemHistorico = prec;
-          matchBase.dbId = ci.ID || ci.id;
-        } else {
-          planDefinitions.push({
-            id: 'custom-' + (ci.ID || Date.now()),
-            dbId: ci.ID || ci.id,
-            onlyIfLogExists: false,
-            intervencao: interv,
-            subsistema: subsys,
-            intervalo_km: kmVal,
-            intervalo_meses: mesesVal,
-            keywords: [interv.toLowerCase(), subsys.toLowerCase()],
-            origem_fonte: orig,
-            precaucaoComHistorico: 'Intervenção técnica realizada conforme histórico.',
-            precaucaoSemHistorico: prec
-          });
-        }
-      });
-
-      let cntEmDia = 0;
-      let cntCritico = 0;
-      let cntAlerta = 0;
-
-      const computedItems = [];
-
-      planDefinitions.forEach(def => {
-        const kmExec = getLatestExecutionKm(def.keywords);
-        const hasHistory = (kmExec !== null && !isNaN(kmExec) && kmExec > 0);
-
-        if (def.onlyIfLogExists && !hasHistory) {
-          return;
-        }
-
-        const proximaKm = hasHistory ? (kmExec + def.intervalo_km) : null;
-        const kmFaltante = proximaKm !== null ? (proximaKm - currentKm) : null;
-
-        let status = 'CRITICO_SEM_HISTORICO';
-        let statusTexto = '🚨 CRÍTICO SEM HISTÓRICO';
-        let statusClass = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2.5 py-1 rounded text-xs font-bold';
-        let textoPrecaucao = def.precaucaoSemHistorico;
-
-        if (hasHistory) {
-          if (currentKm > proximaKm) {
-            status = 'ALERTA_VENCIDO';
-            statusTexto = '🔴 INTERVENÇÃO VENCIDA';
-            statusClass = 'bg-rose-600/30 text-rose-200 border border-rose-500 px-2.5 py-1 rounded text-xs font-bold';
-            textoPrecaucao = `Atenção: Quilometragem ultrapassou o limite prescrito (${proximaKm.toLocaleString('pt-BR')} KM). Realizar manutenção imediatamente!`;
-            cntAlerta++;
-          } else {
-            status = 'EM_DIA';
-            statusTexto = '🟢 EM DIA (MARCO ZERO)';
-            statusClass = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded text-xs font-bold';
-            textoPrecaucao = def.precaucaoComHistorico;
-            cntEmDia++;
-          }
-        } else {
-          if (def.subsistema === 'Suspensão/Direção') {
-            status = 'INDETERMINADO_PRECAUCAO';
-            statusTexto = '🛡️ SEM HISTÓRICO';
-            statusClass = 'bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded text-xs font-bold';
-            cntAlerta++;
-          } else {
-            cntCritico++;
-          }
-        }
-
-        computedItems.push({
-          dbId: def.dbId || null,
-          intervencao: def.intervencao,
-          subsistema: def.subsistema,
-          intervalo_km: def.intervalo_km,
-          intervalo_meses: def.intervalo_meses,
-          km_ultima_execucao: kmExec,
-          proxima_km: proximaKm,
-          km_faltante: kmFaltante,
-          origem_fonte: def.origem_fonte || 'MANUAL_OEM_FABRICANTE',
-          status: status,
-          statusTexto: statusTexto,
-          statusClass: statusClass,
-          texto_precaucao: textoPrecaucao
-        });
-      });
-
-      document.getElementById('cntEmDia').innerText = cntEmDia;
-      document.getElementById('cntCritico').innerText = cntCritico;
-      document.getElementById('cntAlerta').innerText = cntAlerta;
-
-      state.prescriptivePlan = computedItems;
-      renderPrescriptiveCards();
-    }
-
-    /**
-     * CÁLCULO MATEMÁTICO DINÂMICO DO INDICADOR GAUGE DE SAÚDE
-     */
-    function updateDynamicHealthGauge() {
+function updateDynamicHealthGauge() {
       const v = getSelectedVehicle();
       const plan = state.prescriptivePlan || [];
       const scoreElem = document.getElementById('scoreValue');
