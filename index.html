@@ -1268,80 +1268,29 @@
     function deduplicateLogsList(rawLogs) {
       if (!rawLogs || !Array.isArray(rawLogs)) return [];
 
-      const sortedLogs = [...rawLogs].sort((a, b) => {
-        const valA = Number(a.ValorTotal || a.valorTotal || 0);
-        const valB = Number(b.ValorTotal || b.valorTotal || 0);
-        return valB - valA;
-      });
-
-      const registeredCanonicalItems = new Map();
-      const seenLogKeys = new Set();
+      const seenKeys = new Set();
       const cleanedLogs = [];
 
-      sortedLogs.forEach(log => {
-        let placaClean = String(log.Placa || log.placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        if (placaClean === 'EEQ9228') placaClean = 'EEQ9C28';
-
-        const numDoc = String(log.NumeroOS || log.numeroOS || '').trim().toUpperCase();
+      rawLogs.forEach(log => {
+        if (!log) return;
+        const logId = String(log.ID || log.id || '').trim();
+        const vId = String(log.VeiculoID || log.veiculoId || '').trim();
         const dataStr = String(log.Data || log.data || '').trim();
-        const km = String(log.KM || log.km || '');
-        const logId = String(log.ID || log.id || '');
+        const numDoc = String(log.NumeroOS || log.numeroOS || '').trim();
+        const valor = Number(log.ValorTotal || log.valorTotal || 0);
+        const desc = String(log.DescricaoServico || log.Descricao || log.descricaoServico || '').trim();
 
-        let occKey = numDoc ? `${placaClean}_DOC_${numDoc}_${dataStr}` : `${placaClean}_EVT_${dataStr}_KM_${km}`;
-        if (seenLogKeys.has(occKey)) {
-          return;
-        }
+        const uniqueKey = logId ? logId : `${vId}_${dataStr}_${numDoc}_${valor}_${desc.substring(0, 30)}`;
 
-        const descText = log.DescricaoServico || log.Descricao || log.descricaoServico || '';
-        const rawLines = descText.split('\n');
-
-        const uniqueLines = [];
-        let logCalculatedTotal = 0;
-
-        rawLines.forEach(line => {
-          if (!line.trim()) return;
-
-          let itemDesc = line.replace(/^•\s*/, '');
-          let itemPrice = 0;
-          let itemCategory = 'Peça';
-
-          const match = line.match(/•?\s*(.*?)\s*-\s*R\$\s*([\d.]+)\s*\((.*?)\)/);
-          if (match) {
-            itemDesc = match[1].trim();
-            itemPrice = Number(match[2]);
-            itemCategory = match[3].trim();
-          } else {
-            itemPrice = Number(log.ValorTotal || log.valorTotal || 0);
-          }
-
-          const canonicalKey = getCanonicalItemKey(itemDesc, itemPrice);
-
-          if (canonicalKey && registeredCanonicalItems.has(canonicalKey)) {
-          } else {
-            if (canonicalKey) {
-              registeredCanonicalItems.set(canonicalKey, { logId, desc: itemDesc, price: itemPrice });
-            }
-            uniqueLines.push(line.trim().startsWith('•') ? line.trim() : `• ${itemDesc} - R$ ${itemPrice.toFixed(2)} (${itemCategory})`);
-            logCalculatedTotal += itemPrice;
-          }
-        });
-
-        if (uniqueLines.length > 0) {
-          seenLogKeys.add(occKey);
-          
-          const newLog = Object.assign({}, log, {
-            Placa: placaClean,
-            DescricaoServico: uniqueLines.join('\n'),
-            ValorTotal: logCalculatedTotal > 0 ? logCalculatedTotal : Number(log.ValorTotal || 0)
-          });
-          cleanedLogs.push(newLog);
+        if (!seenKeys.has(uniqueKey)) {
+          seenKeys.add(uniqueKey);
+          cleanedLogs.push(log);
         }
       });
 
-      return cleanedLogs.sort((a, b) => String(a.Data || '').localeCompare(String(b.Data || '')));
+      return cleanedLogs.sort((a, b) => String(b.Data || '').localeCompare(String(a.Data || '')));
     }
-
-    function setupDropzoneHandlers() {
+function setupDropzoneHandlers() {
       const dropzone = document.getElementById('dropzoneContainer');
       if (!dropzone) return;
 
@@ -1520,7 +1469,7 @@
       let extractedCNPJ = '';
       let extractedItems = [];
 
-      // 1. Identificar número do documento e descrição limpa do arquivo
+      // 1. Limpeza do nome do arquivo para extrair o nome da peça
       const cleanNameOnly = file.name.replace(/\.[^/.]+$/, "");
       
       const docMatch = file.name.match(/(?:OS|NF|RECIBO|DOC|INVOICE)?[_\s-]*(\d{4,18})/i);
@@ -1528,12 +1477,15 @@
         numDoc = docMatch[1];
       }
 
-      const invoiceNameMatch = cleanNameOnly.match(/^invoice-\d+\s*(.*)$/i) || cleanNameOnly.match(/^(\d+)\s*(.*)$/i);
+      // Se o arquivo vier como "invoice-2000016835959714 filtro de combustivel"
+      const invoiceNameMatch = cleanNameOnly.match(/^invoice[-_\s]*\d+[-_\s]*(.*)$/i) || 
+                               cleanNameOnly.match(/^\d+[-_\s]*(.*)$/i) ||
+                               cleanNameOnly.match(/^([A-Za-zÀ-ÿ\s\-_]+)/i);
       if (invoiceNameMatch && invoiceNameMatch[1]) {
         extractedDesc = invoiceNameMatch[1].trim();
       }
 
-      // 2. Extração via PDF.js com agrupamento por coordenadas Y
+      // 2. Extração via PDF.js com agrupamento de linhas verticais (Y)
       if (file.name.toLowerCase().endsWith('.pdf') && typeof pdfjsLib !== 'undefined') {
         try {
           let binaryString = '';
@@ -1583,13 +1535,13 @@
             const emitMatch = fullText.match(/(?:RECEBEMOS DE|EMITENTE|RAZ[AÃ]O SOCIAL|FORNECEDOR|VENDEDOR)[\s:]*([A-Z0-9\s\.\-&]{4,50})/i);
             if (emitMatch) extractedEmitente = emitMatch[1].replace(/OS PRODUTOS.*/i, '').trim();
 
-            // Extrair Número da Nota se não tiver
+            // Extrair Número da Nota Fiscal
             const nfNumMatch = fullText.match(/(?:N[ÚU]MERO|N[°º]|NOTA FISCAL|DANFE|NF-E)[\s:]*(\d{3,12})/i);
             if (nfNumMatch && !numDoc) numDoc = nfNumMatch[1];
 
-            // Extrair Preço Total da Nota / Produtos
+            // Extrair Preço Total da Nota / Produtos (Corrigido regex com [\s:=-]*)
             const totalMatches = [
-              fullText.match(/(?:VALOR TOTAL DA NOTA|VALOR DO DOCUMENTO|VALOR TOTAL DOS PRODUTOS|VALOR L[IÍ]QUIDO|TOTAL DA NOTA|VALOR TOTAL|V\. TOTAL|TOTAL A PAGAR|VALOR A PAGAR|TOTAL)[s:=-]*(?:R\$\s*)?([\d.]+[,.]\d{2})/i),
+              fullText.match(/(?:VALOR TOTAL DA NOTA|VALOR DO DOCUMENTO|VALOR TOTAL DOS PRODUTOS|VALOR L[IÍ]QUIDO|TOTAL DA NOTA|VALOR TOTAL|V\. TOTAL|TOTAL A PAGAR|VALOR A PAGAR|TOTAL)[\s:=-]*(?:R\$\s*)?([\d.]+[,.]\d{2})/i),
               fullText.match(/(?:V\.PROD|V\.TOTAL|VR\.TOTAL)[\s:=-]*([\d.]+[,.]\d{2})/i),
               fullText.match(/R\$\s*([\d.]+[,.]\d{2})/i)
             ];
@@ -1613,6 +1565,12 @@
                   extractedPrice = Math.max(...numbers);
                 }
               }
+            }
+
+            // Tentar extrair descrição detalhada do produto dentro do PDF
+            const prodLineMatch = fullText.match(/(?:PRODUTO|DESCRI[CÇ][AÃ]O|ITEM)[s:]*([A-Z0-9s-/.]{4,60})/i);
+            if (prodLineMatch && (!extractedDesc || extractedDesc.length < 3)) {
+              extractedDesc = prodLineMatch[1].trim();
             }
 
             // Tentar extrair itens tabulares do corpo da DANFE
@@ -1675,7 +1633,7 @@
         return { cat, sub };
       }
 
-      // Adicionar itens extraídos da tabela
+      // Adicionar itens extraídos da tabela ou o item da nota fiscal
       if (extractedItems.length > 0) {
         extractedItems.forEach(it => {
           const { cat, sub } = categorizeItem(it.desc);
@@ -1688,9 +1646,13 @@
           count++;
         });
       } else {
-        // Se for fatura unitária (ex: 1 peça por invoice)
+        // Obter nome limpo da peça (removendo "invoice-", "doc-", números longos)
         let finalDesc = extractedDesc || cleanNameOnly;
-        finalDesc = finalDesc.replace(/^invoice[-_\s]*/i, '').replace(/^\d+[-_\s]*/i, '').trim();
+        finalDesc = finalDesc
+          .replace(/^invoice[-_s]*/i, '')
+          .replace(/^d+[-_s]*/i, '')
+          .replace(/^[-_s]+/, '')
+          .trim();
         if (!finalDesc || finalDesc.length < 2) finalDesc = cleanNameOnly;
 
         const { cat, sub } = categorizeItem(finalDesc);
