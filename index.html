@@ -2407,42 +2407,58 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
 
       const vObj = {
         id: vId,
+        ID: vId,
         marca: document.getElementById('vMarca').value.toUpperCase(),
+        Marca: document.getElementById('vMarca').value.toUpperCase(),
         modelo: document.getElementById('vModelo').value.toUpperCase(),
+        Modelo: document.getElementById('vModelo').value.toUpperCase(),
         anoFabricacao: Number(document.getElementById('vAnoFab').value),
+        AnoFabricacao: Number(document.getElementById('vAnoFab').value),
         anoModelo: Number(document.getElementById('vAnoMod').value),
+        AnoModelo: Number(document.getElementById('vAnoMod').value),
         placaChassi: document.getElementById('vPlaca').value.toUpperCase(),
+        PlacaChassi: document.getElementById('vPlaca').value.toUpperCase(),
+        placa: document.getElementById('vPlaca').value.toUpperCase(),
+        Placa: document.getElementById('vPlaca').value.toUpperCase(),
         motorizacao: document.getElementById('vMotor').value,
+        Motorizacao: document.getElementById('vMotor').value,
         combustivel: document.getElementById('vCombustivel').value,
+        Combustivel: document.getElementById('vCombustivel').value,
         tipoTransmissao: document.getElementById('vTransmissao').value,
+        TipoTransmissao: document.getElementById('vTransmissao').value,
         regimeUso: document.getElementById('vRegimeUso').value,
+        RegimeUso: document.getElementById('vRegimeUso').value,
         kmInicial: Number(document.getElementById('vKmInicial').value),
-        kmAtual: Number(document.getElementById('vKmAtual').value)
+        KMInicial: Number(document.getElementById('vKmInicial').value),
+        kmAtual: Number(document.getElementById('vKmAtual').value),
+        KMAtual: Number(document.getElementById('vKmAtual').value)
       };
 
       if (vId) {
         const v = state.vehicles.find(item => String(item.ID) === String(vId));
         if (v) {
-          Object.assign(v, {
-            Marca: vObj.marca, Modelo: vObj.modelo, AnoFabricacao: vObj.anoFabricacao, AnoModelo: vObj.anoModelo,
-            PlacaChassi: vObj.placaChassi, Motorizacao: vObj.motorizacao, Combustivel: vObj.combustivel,
-            TipoTransmissao: vObj.tipoTransmissao, RegimeUso: vObj.regimeUso, KMInicial: vObj.kmInicial, KMAtual: vObj.kmAtual
-          });
+          Object.assign(v, vObj);
         }
         if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run.updateVehicle(vObj);
+          google.script.run
+            .withSuccessHandler(res => {
+              loadData();
+            })
+            .updateVehicle(vObj);
         }
       } else {
         const newId = 'VEIC-' + String(state.vehicles.length + 1).padStart(3, '0');
-        const newV = {
-          ID: newId, Marca: vObj.marca, Modelo: vObj.modelo, AnoFabricacao: vObj.anoFabricacao, AnoModelo: vObj.anoModelo,
-          PlacaChassi: vObj.placaChassi, Motorizacao: vObj.motorizacao, Combustivel: vObj.combustivel,
-          TipoTransmissao: vObj.tipoTransmissao, RegimeUso: vObj.regimeUso, KMInicial: vObj.kmInicial, KMAtual: vObj.kmAtual
-        };
-        state.vehicles.push(newV);
+        vObj.id = newId;
+        vObj.ID = newId;
+        
+        state.vehicles.push(vObj);
         state.selectedVehicleId = newId;
         if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run.addVehicle(newV);
+          google.script.run
+            .withSuccessHandler(res => {
+              loadData();
+            })
+            .addVehicle(vObj);
         }
       }
 
@@ -2450,8 +2466,7 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       renderVehicleSelectors();
       renderCurrentVehicleView();
     }
-
-    function promptEditKm() {
+function promptEditKm() {
       const v = getSelectedVehicle();
       if (!v) return;
       const newKm = prompt(`Atualizar Quilometragem Atual do veículo ${v.Modelo || ''}:`, v.KMAtual || 0);
