@@ -1518,20 +1518,22 @@
       let extractedDesc = '';
       let extractedEmitente = '';
       let extractedCNPJ = '';
+      let extractedItems = [];
 
-      const nameMatch = file.name.match(/(?:OS|NF|RECIBO|DOC|INVOICE)?[_\s-]*(\d{4,18})/i);
-      if (nameMatch) {
-        numDoc = nameMatch[1];
+      // 1. Identificar número do documento e descrição limpa do arquivo
+      const cleanNameOnly = file.name.replace(/\.[^/.]+$/, "");
+      
+      const docMatch = file.name.match(/(?:OS|NF|RECIBO|DOC|INVOICE)?[_\s-]*(\d{4,18})/i);
+      if (docMatch) {
+        numDoc = docMatch[1];
       }
 
-      // Extrair descrição limpa do nome do arquivo se for formato "invoice-XXXXX descricao.pdf"
-      const cleanNameOnly = file.name.replace(/\.[^/.]+$/, "");
-      const invoiceNameMatch = cleanNameOnly.match(/^invoice-\d+\s*(.*)$/i);
+      const invoiceNameMatch = cleanNameOnly.match(/^invoice-\d+\s*(.*)$/i) || cleanNameOnly.match(/^(\d+)\s*(.*)$/i);
       if (invoiceNameMatch && invoiceNameMatch[1]) {
         extractedDesc = invoiceNameMatch[1].trim();
       }
 
-      // Se for PDF e temos pdfjsLib carregado, converter Base64 para Uint8Array e extrair texto
+      // 2. Extração via PDF.js com agrupamento por coordenadas Y
       if (file.name.toLowerCase().endsWith('.pdf') && typeof pdfjsLib !== 'undefined') {
         try {
           let binaryString = '';
@@ -1553,8 +1555,23 @@
           for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            const pageStrings = textContent.items.map(item => item.str);
-            fullText += pageStrings.join(' ') + '\n';
+            
+            // Agrupar itens por linha visual (coordenada Y)
+            const linesMap = new Map();
+            textContent.items.forEach(item => {
+              const y = Math.round((item.transform[5] || 0) / 3) * 3;
+              if (!linesMap.has(y)) linesMap.set(y, []);
+              linesMap.get(y).push(item);
+            });
+
+            const sortedY = Array.from(linesMap.keys()).sort((a, b) => b - a);
+            sortedY.forEach(y => {
+              const rowItems = linesMap.get(y).sort((a, b) => (a.transform[4] || 0) - (b.transform[4] || 0));
+              const lineText = rowItems.map(it => it.str).join(' ').trim();
+              if (lineText) {
+                fullText += lineText + '\n';
+              }
+            });
           }
 
           if (fullText.trim().length > 10) {
@@ -1562,32 +1579,64 @@
             const cnpjMatch = fullText.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
             if (cnpjMatch) extractedCNPJ = cnpjMatch[0];
 
-            // Extrair Emitente
-            const emitMatch = fullText.match(/(?:RECEBEMOS DE|EMITENTE|RAZ[AÃ]O SOCIAL|NOME)[\s:]*([A-Z0-9\s\.\-]{4,40})/i);
-            if (emitMatch) extractedEmitente = emitMatch[1].trim();
+            // Extrair Emitente / Razão Social
+            const emitMatch = fullText.match(/(?:RECEBEMOS DE|EMITENTE|RAZ[AÃ]O SOCIAL|FORNECEDOR|VENDEDOR)[\s:]*([A-Z0-9\s\.\-&]{4,50})/i);
+            if (emitMatch) extractedEmitente = emitMatch[1].replace(/OS PRODUTOS.*/i, '').trim();
 
-            // Extrair Valor Total da Nota / Produtos (formato R$ 123,45 ou 123,45)
-            const valorMatch = fullText.match(/(?:VALOR TOTAL DA NOTA|VALOR DO DOCUMENTO|VALOR TOTAL DOS PRODUTOS|VALOR TOTAL|TOTAL)\s*[:=]?\s*(?:R\$\s*)?([\d.]+[,.]\d{2})/i) ||
-                               fullText.match(/R\$\s*([\d.]+[,.]\d{2})/i);
-            if (valorMatch) {
-              const vStr = valorMatch[1].replace(/\./g, '').replace(',', '.');
-              const parsedVal = parseFloat(vStr);
-              if (!isNaN(parsedVal) && parsedVal > 0) extractedPrice = parsedVal;
+            // Extrair Número da Nota se não tiver
+            const nfNumMatch = fullText.match(/(?:N[ÚU]MERO|N[°º]|NOTA FISCAL|DANFE|NF-E)[\s:]*(\d{3,12})/i);
+            if (nfNumMatch && !numDoc) numDoc = nfNumMatch[1];
+
+            // Extrair Preço Total da Nota / Produtos
+            const totalMatches = [
+              fullText.match(/(?:VALOR TOTAL DA NOTA|VALOR DO DOCUMENTO|VALOR TOTAL DOS PRODUTOS|VALOR L[IÍ]QUIDO|TOTAL DA NOTA|VALOR TOTAL|V\. TOTAL|TOTAL A PAGAR|VALOR A PAGAR|TOTAL)[s:=-]*(?:R\$\s*)?([\d.]+[,.]\d{2})/i),
+              fullText.match(/(?:V\.PROD|V\.TOTAL|VR\.TOTAL)[\s:=-]*([\d.]+[,.]\d{2})/i),
+              fullText.match(/R\$\s*([\d.]+[,.]\d{2})/i)
+            ];
+
+            for (let m of totalMatches) {
+              if (m && m[1]) {
+                const val = parseFloat(m[1].replace(/\./g, '').replace(',', '.'));
+                if (!isNaN(val) && val > 0) {
+                  extractedPrice = val;
+                  break;
+                }
+              }
             }
 
-            // Tentar extrair linhas canônicas da NF-e
-            const res = parseCleanTextLines(fullText, numDoc);
-            if (res.count > 0) {
-              count = res.count;
-              if (res.numDoc) numDoc = res.numDoc;
+            // Fallback de varredura monetária brasileira se preço ainda for 0
+            if (extractedPrice === 0) {
+              const allCurrency = fullText.match(/(?:^|\s)([\d]{1,3}(?:\.[\d]{3})*,\d{2})(?:\s|$)/g);
+              if (allCurrency && allCurrency.length > 0) {
+                const numbers = allCurrency.map(s => parseFloat(s.trim().replace(/\./g, '').replace(',', '.'))).filter(n => !isNaN(n) && n > 0);
+                if (numbers.length > 0) {
+                  extractedPrice = Math.max(...numbers);
+                }
+              }
             }
+
+            // Tentar extrair itens tabulares do corpo da DANFE
+            const lines = fullText.split(/\r?\n/);
+            lines.forEach(line => {
+              const trimmed = line.trim();
+              if (!trimmed || trimmed.length < 5) return;
+
+              const itemMatch = trimmed.match(/(?:^\d+\s+)?([A-Z0-9\s\-\/\.]{4,60}?)\s+(?:UN|PC|P[CÇ]A|CJ|LT|KG|SV|UND|1)?\s+(\d+[.,]?\d*)\s+([\d.]+[,.]\d{2})\s+([\d.]+[,.]\d{2})/i);
+              if (itemMatch) {
+                const desc = itemMatch[1].trim();
+                const val = parseFloat(itemMatch[4].replace(/\./g, '').replace(',', '.'));
+                if (desc && !isNaN(val) && val > 0 && !/BASE|CALCULO|IMPOSTO|ICMS|TOTAL|DESCONTO/i.test(desc)) {
+                  extractedItems.push({ desc: desc.toUpperCase(), val: val });
+                }
+              }
+            });
           }
         } catch (e) {
-          console.warn('Erro ao processar PDF via PDF.js:', e);
+          console.warn('Processamento PDF.js:', e);
         }
       }
 
-      // Preencher campos do formulário se encontrados
+      // Preencher campos de cabeçalho da OS/NF
       if (extractedCNPJ && !document.getElementById('formOficinaCNPJ').value) {
         document.getElementById('formOficinaCNPJ').value = extractedCNPJ;
       }
@@ -1595,35 +1644,56 @@
         document.getElementById('formOficinaNome').value = extractedEmitente.toUpperCase();
       }
 
-      // Se não extraiu itens tabulares, criar o item específico da Nota Fiscal / Peça
-      if (count === 0) {
-        let finalDesc = extractedDesc || cleanNameOnly;
-        finalDesc = finalDesc.replace(/^invoice[-_\s]*/i, '').replace(/^\d+[-_\s]*/i, '').trim();
-        if (!finalDesc) finalDesc = cleanNameOnly;
-
+      // Helper para categorização automática por palavras-chave
+      function categorizeItem(itemDesc) {
+        const lower = itemDesc.toLowerCase();
         let cat = 'Peça';
         let sub = 'Motor/Trem de Força';
-        const lower = finalDesc.toLowerCase();
 
-        if (lower.includes('oleo') || lower.includes('óleo') || lower.includes('fluido') || lower.includes('aditivo') || lower.includes('arrefecime')) {
+        if (lower.includes('oleo') || lower.includes('óleo') || lower.includes('fluido') || lower.includes('aditivo') || lower.includes('liquido') || lower.includes('líquido') || lower.includes('arrefecime')) {
           cat = 'Óleo/Fluido';
         } else if (lower.includes('mao de obra') || lower.includes('mão de obra') || lower.includes('servico') || lower.includes('serviço')) {
           cat = 'Mão de Obra';
         } else if (lower.includes('retifica') || lower.includes('retífica') || lower.includes('usinagem')) {
           cat = 'Retífica';
-        } else if (lower.includes('limpeza') || lower.includes('flush') || lower.includes('gas') || lower.includes('combustivel')) {
+        } else if (lower.includes('limpeza') || lower.includes('flush') || lower.includes('gas') || lower.includes('combustivel') || lower.includes('combustível')) {
           cat = 'Insumo';
         }
 
-        if (lower.includes('arrefecime') || lower.includes('radiador') || lower.includes('valvula termostatica') || lower.includes('bomba de agua') || lower.includes('bomba de água') || lower.includes('trocador de calor')) {
+        if (lower.includes('arrefecime') || lower.includes('radiador') || lower.includes('valvula termostatica') || lower.includes('válvula termostática') || lower.includes('bomba de agua') || lower.includes('bomba de água') || lower.includes('trocador de calor') || lower.includes('mangueir') || lower.includes('carcaca') || lower.includes('carcaça')) {
           sub = 'Arrefecimento';
-        } else if (lower.includes('cambio') || lower.includes('câmbio') || lower.includes('atf') || lower.includes('transmissao') || lower.includes('transmissão')) {
+        } else if (lower.includes('cambio') || lower.includes('câmbio') || lower.includes('atf') || lower.includes('transmissao') || lower.includes('transmissão') || lower.includes('solenoide') || lower.includes('eletrovalvula')) {
           sub = 'Transmissão';
         } else if (lower.includes('freio') || lower.includes('pastilha') || lower.includes('disco')) {
           sub = 'Freios';
-        } else if (lower.includes('bieleta') || lower.includes('bucha') || lower.includes('suspensao') || lower.includes('suspensão') || lower.includes('amortecedor')) {
+        } else if (lower.includes('bieleta') || lower.includes('bucha') || lower.includes('suspensao') || lower.includes('suspensão') || lower.includes('amortecedor') || lower.includes('coxim')) {
           sub = 'Suspensão/Direção';
+        } else if (lower.includes('bateria') || lower.includes('vela') || lower.includes('alternador') || lower.includes('bobina')) {
+          sub = 'Elétrica/Eletrônica';
         }
+
+        return { cat, sub };
+      }
+
+      // Adicionar itens extraídos da tabela
+      if (extractedItems.length > 0) {
+        extractedItems.forEach(it => {
+          const { cat, sub } = categorizeItem(it.desc);
+          addMultiItemRow({
+            desc: it.desc,
+            valor: it.val,
+            tipo: cat,
+            subsistema: sub
+          });
+          count++;
+        });
+      } else {
+        // Se for fatura unitária (ex: 1 peça por invoice)
+        let finalDesc = extractedDesc || cleanNameOnly;
+        finalDesc = finalDesc.replace(/^invoice[-_\s]*/i, '').replace(/^\d+[-_\s]*/i, '').trim();
+        if (!finalDesc || finalDesc.length < 2) finalDesc = cleanNameOnly;
+
+        const { cat, sub } = categorizeItem(finalDesc);
 
         addMultiItemRow({
           desc: finalDesc.toUpperCase(),
@@ -1636,64 +1706,7 @@
 
       if (callback) callback(count, numDoc);
     }
-function parseCleanTextLines(textContent, defaultNumDoc) {
-      let count = 0;
-      let numDoc = defaultNumDoc || '';
-
-      const lines = textContent.split(/\r?\n/);
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        // Ignorar lixo binário ou linhas curtas
-        if (!trimmed || trimmed.length < 3 || /[\x00-\x08\x0E-\x1F]/.test(trimmed)) return;
-
-        const cnpjMatch = trimmed.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
-        if (cnpjMatch && !document.getElementById('formOficinaCNPJ').value) {
-          document.getElementById('formOficinaCNPJ').value = cnpjMatch[0];
-        }
-
-        if (/oficina|mecanica|retifica|auto|ltda/i.test(trimmed) && !document.getElementById('formOficinaNome').value) {
-          document.getElementById('formOficinaNome').value = trimmed.toUpperCase();
-        }
-
-        const docMatch = trimmed.match(/(?:ORDEM DE SERVI[CÇ]O|OS|NF|NOTA)\s*[:#\.\-]?\s*(\d+)/i);
-        if (docMatch && !numDoc) {
-          numDoc = docMatch[1];
-        }
-
-        const kmMatch = trimmed.match(/KM\s*[:#\.\-]?\s*(\d+[\d.]*)/i);
-        if (kmMatch && (!document.getElementById('formKm').value || document.getElementById('formKm').value === '0')) {
-          document.getElementById('formKm').value = kmMatch[1].replace(/\./g, '');
-        }
-
-        const itemMatch = trimmed.match(/^\s*(?:\d+\s+)?([A-Z0-9\s\-\/]+?)\s+(?:SV|UN|PC|P[CÇ]A|CJ|LT)?\s*\d*[,.]?\d*\s+([\d.]+[,.]\d{2})/i);
-        if (itemMatch) {
-          const desc = itemMatch[1].trim();
-          const valStr = itemMatch[2].replace(/\./g, '').replace(',', '.');
-          const val = parseFloat(valStr);
-
-          if (desc && !isNaN(val) && val > 0 && desc.length > 3 && !/TOTAL|SUBTOTAL|DESCONTO|VALOR/i.test(desc)) {
-            let cat = "Peça";
-            const lower = desc.toLowerCase();
-            if (lower.includes("mao de obra") || lower.includes("servico") || lower.includes("m.o")) cat = "Mão de Obra";
-            else if (lower.includes("oleo") || lower.includes("fluido") || lower.includes("aditivo")) cat = "Óleo/Fluido";
-            else if (lower.includes("retifica") || lower.includes("usinagem")) cat = "Retífica";
-            else if (lower.includes("limpeza") || lower.includes("flush") || lower.includes("combustivel")) cat = "Insumo";
-
-            addMultiItemRow({
-              desc: desc.toUpperCase(),
-              valor: val,
-              tipo: cat,
-              subsistema: "Motor/Trem de Força"
-            });
-            count++;
-          }
-        }
-      });
-
-      return { count: count, numDoc: numDoc };
-    }
-
-    function parseDocumentTextContentBatch(file, textContent) {
+function parseDocumentTextContentBatch(file, textContent) {
       let count = 0;
       let numDoc = '';
 
