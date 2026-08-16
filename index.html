@@ -36,6 +36,13 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
   <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -1367,7 +1374,7 @@
 
       if (aiBadge) {
         aiBadge.classList.remove('hidden');
-        aiStatusText.innerText = `⏳ Processando lote de ${fileList.length} arquivo(s)...`;
+        aiStatusText.innerText = `🔍 Analisando ${fileList.length} arquivo(s) com Inteligência Artificial / OCR...`;
       }
 
       let processedCount = 0;
@@ -1378,9 +1385,11 @@
       tbody.innerHTML = '';
 
       fileList.forEach(file => {
-        const reader = new FileReader();
+        const lowerName = file.name.toLowerCase();
 
-        if (file.name.toLowerCase().endsWith('.xml')) {
+        // 1. XML (NFe/CTe)
+        if (lowerName.endsWith('.xml')) {
+          const reader = new FileReader();
           reader.onload = function(e) {
             const result = parseNfeXmlBatch(e.target.result, file.name);
             processedCount++;
@@ -1392,7 +1401,62 @@
             }
           };
           reader.readAsText(file);
-        } else {
+        }
+        // 2. PDF ou IMAGEM (JPG, PNG, WEBP)
+        else if (lowerName.endsWith('.pdf') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') || lowerName.endsWith('.png') || lowerName.endsWith('.webp')) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const base64Data = e.target.result;
+            
+            // Chamar IA do Backend Google Apps Script
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+              google.script.run
+                .withSuccessHandler(res => {
+                  if (res && res.success && res.data) {
+                    applyAiExtractedData(res.data);
+                    processedCount++;
+                    totalItemsExtracted += (res.data.itens ? res.data.itens.length : 1);
+                    if (res.data.numDoc) docsFound.push(res.data.numDoc);
+                  } else {
+                    // Fallback se IA não tiver chave
+                    handlePdfOrImageFallback(file, base64Data, () => {
+                      processedCount++;
+                      if (processedCount === fileList.length) {
+                        finalizeBatchProcess(fileList.length, totalItemsExtracted, docsFound);
+                      }
+                    });
+                  }
+
+                  if (processedCount === fileList.length) {
+                    finalizeBatchProcess(fileList.length, totalItemsExtracted, docsFound);
+                  }
+                })
+                .withFailureHandler(err => {
+                  handlePdfOrImageFallback(file, base64Data, () => {
+                    processedCount++;
+                    if (processedCount === fileList.length) {
+                      finalizeBatchProcess(fileList.length, totalItemsExtracted, docsFound);
+                    }
+                  });
+                })
+                .processDocumentAI(base64Data, file.type || 'application/pdf', file.name);
+            } else {
+              // Modo Local / Fallback
+              handlePdfOrImageFallback(file, base64Data, (itemsAdded, docNum) => {
+                processedCount++;
+                totalItemsExtracted += itemsAdded;
+                if (docNum) docsFound.push(docNum);
+                if (processedCount === fileList.length) {
+                  finalizeBatchProcess(fileList.length, totalItemsExtracted, docsFound);
+                }
+              });
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+        // 3. Arquivo de Texto Puro (.txt, .csv)
+        else {
+          const reader = new FileReader();
           reader.onload = function(e) {
             const result = parseDocumentTextContentBatch(file, e.target.result);
             processedCount++;
@@ -1408,67 +1472,147 @@
       });
     }
 
-    function parseNfeXmlBatch(xmlText, fileName) {
+    function applyAiExtractedData(data) {
+      if (!data) return;
+
+      if (data.numDoc && !document.getElementById('formNumeroOS').value) {
+        document.getElementById('formNumeroOS').value = data.numDoc;
+      }
+      if (data.data && !document.getElementById('formData').value) {
+        document.getElementById('formData').value = data.data;
+      }
+      if (data.km && (!document.getElementById('formKm').value || document.getElementById('formKm').value === '0')) {
+        document.getElementById('formKm').value = data.km;
+      }
+      if (data.oficinaNome && !document.getElementById('formOficinaNome').value) {
+        document.getElementById('formOficinaNome').value = data.oficinaNome.toUpperCase();
+      }
+      if (data.oficinaCNPJ && !document.getElementById('formOficinaCNPJ').value) {
+        document.getElementById('formOficinaCNPJ').value = data.oficinaCNPJ;
+      }
+      if (data.oficinaCidade && !document.getElementById('formOficinaCidade').value) {
+        document.getElementById('formOficinaCidade').value = data.oficinaCidade.toUpperCase();
+      }
+      if (data.tipoManutencao) {
+        document.getElementById('formTipo').value = data.tipoManutencao;
+      }
+
+      if (data.itens && Array.isArray(data.itens) && data.itens.length > 0) {
+        data.itens.forEach(item => {
+          if (item && item.desc) {
+            addMultiItemRow({
+              desc: item.desc.toUpperCase(),
+              valor: Number(item.valor || 0),
+              tipo: item.tipo || 'Peça',
+              subsistema: item.subsistema || 'Motor/Trem de Força'
+            });
+          }
+        });
+      }
+    }
+
+    async function handlePdfOrImageFallback(file, base64Data, callback) {
       let count = 0;
       let numDoc = '';
 
-      try {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+      const nameMatch = file.name.match(/(?:OS|NF|RECIBO|DOC)?[_\s-]*(\d{4,8})/i);
+      if (nameMatch) {
+        numDoc = nameMatch[1];
+      }
 
-        const xNome = xmlDoc.querySelector("emit > xNome")?.textContent || 
-                      xmlDoc.querySelector("emit > xFant")?.textContent || 
-                      xmlDoc.querySelector("xNome")?.textContent || "";
-        
-        const cnpj = xmlDoc.querySelector("emit > CNPJ")?.textContent || 
-                     xmlDoc.querySelector("CNPJ")?.textContent || "";
-        
-        const cnpjFormatted = cnpj ? cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : "";
-        const xMun = xmlDoc.querySelector("enderEmit > xMun")?.textContent || xmlDoc.querySelector("xMun")?.textContent || "";
-        const uf = xmlDoc.querySelector("enderEmit > UF")?.textContent || xmlDoc.querySelector("UF")?.textContent || "";
-        const cidadeUf = (xMun && uf) ? `${xMun} - ${uf}` : xMun || uf;
+      // Se for PDF e temos pdfjsLib carregado, tentar extrair texto vetorial limpo
+      if (file.name.toLowerCase().endsWith('.pdf') && typeof pdfjsLib !== 'undefined') {
+        try {
+          const loadingTask = pdfjsLib.getDocument(base64Data);
+          const pdf = await loadingTask.promise;
+          let fullText = '';
 
-        numDoc = xmlDoc.querySelector("ide > nNF")?.textContent || xmlDoc.querySelector("nNF")?.textContent || "";
-        const dhEmi = xmlDoc.querySelector("ide > dhEmi")?.textContent || xmlDoc.querySelector("ide > dEmi")?.textContent || xmlDoc.querySelector("dhEmi")?.textContent || "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageStrings = textContent.items.map(item => item.str);
+            fullText += pageStrings.join('\n') + '\n';
+          }
 
-        if (xNome && !document.getElementById('formOficinaNome').value) document.getElementById('formOficinaNome').value = xNome.toUpperCase();
-        if (cnpjFormatted && !document.getElementById('formOficinaCNPJ').value) document.getElementById('formOficinaCNPJ').value = cnpjFormatted;
-        if (cidadeUf && !document.getElementById('formOficinaCidade').value) document.getElementById('formOficinaCidade').value = cidadeUf.toUpperCase();
-        if (dhEmi && !document.getElementById('formData').value) document.getElementById('formData').value = dhEmi.split('T')[0];
+          if (fullText.trim().length > 20) {
+            const res = parseCleanTextLines(fullText, numDoc);
+            count = res.count;
+            if (res.numDoc) numDoc = res.numDoc;
+          }
+        } catch (e) {
+          console.warn('Extração PDF.js não aplicável (documento escaneado/imagem):', e);
+        }
+      }
 
-        const detNodes = xmlDoc.querySelectorAll("det");
-        detNodes.forEach(det => {
-          const xProd = det.querySelector("prod > xProd")?.textContent || det.querySelector("xProd")?.textContent || "";
-          const vProd = Number(det.querySelector("prod > vProd")?.textContent || det.querySelector("vProd")?.textContent || 0);
+      // Se não extraiu linhas (ex: imagem ou PDF escaneado sem chave de IA ativa)
+      if (count === 0) {
+        addMultiItemRow({
+          desc: `Documento Anexado: ${file.name.replace(/\.[^/.]+$/, "")}`,
+          valor: 0.00,
+          tipo: "Peça",
+          subsistema: "Motor/Trem de Força"
+        });
+        count = 1;
+      }
 
-          if (xProd) {
-            let tipo = "Peça";
-            const lower = xProd.toLowerCase();
-            if (lower.includes("mao de obra") || lower.includes("servico") || lower.includes("m.o") || lower.includes("montagem") || lower.includes("reforma")) tipo = "Mão de Obra";
-            else if (lower.includes("oleo") || lower.includes("fluido") || lower.includes("aditivo") || lower.includes("lubrificante")) tipo = "Óleo/Fluido";
-            else if (lower.includes("retifica") || lower.includes("usinagem")) tipo = "Retífica";
-            else if (lower.includes("limpeza") || lower.includes("flush") || lower.includes("gas") || lower.includes("combustivel")) tipo = "Insumo";
+      if (callback) callback(count, numDoc);
+    }
+
+    function parseCleanTextLines(textContent, defaultNumDoc) {
+      let count = 0;
+      let numDoc = defaultNumDoc || '';
+
+      const lines = textContent.split(/\r?\n/);
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        // Ignorar lixo binário ou linhas curtas
+        if (!trimmed || trimmed.length < 3 || /[\x00-\x08\x0E-\x1F]/.test(trimmed)) return;
+
+        const cnpjMatch = trimmed.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
+        if (cnpjMatch && !document.getElementById('formOficinaCNPJ').value) {
+          document.getElementById('formOficinaCNPJ').value = cnpjMatch[0];
+        }
+
+        if (/oficina|mecanica|retifica|auto|ltda/i.test(trimmed) && !document.getElementById('formOficinaNome').value) {
+          document.getElementById('formOficinaNome').value = trimmed.toUpperCase();
+        }
+
+        const docMatch = trimmed.match(/(?:ORDEM DE SERVI[CÇ]O|OS|NF|NOTA)\s*[:#\.\-]?\s*(\d+)/i);
+        if (docMatch && !numDoc) {
+          numDoc = docMatch[1];
+        }
+
+        const kmMatch = trimmed.match(/KM\s*[:#\.\-]?\s*(\d+[\d.]*)/i);
+        if (kmMatch && (!document.getElementById('formKm').value || document.getElementById('formKm').value === '0')) {
+          document.getElementById('formKm').value = kmMatch[1].replace(/\./g, '');
+        }
+
+        const itemMatch = trimmed.match(/^\s*(?:\d+\s+)?([A-Z0-9\s\-\/]+?)\s+(?:SV|UN|PC|P[CÇ]A|CJ|LT)?\s*\d*[,.]?\d*\s+([\d.]+[,.]\d{2})/i);
+        if (itemMatch) {
+          const desc = itemMatch[1].trim();
+          const valStr = itemMatch[2].replace(/\./g, '').replace(',', '.');
+          const val = parseFloat(valStr);
+
+          if (desc && !isNaN(val) && val > 0 && desc.length > 3 && !/TOTAL|SUBTOTAL|DESCONTO|VALOR/i.test(desc)) {
+            let cat = "Peça";
+            const lower = desc.toLowerCase();
+            if (lower.includes("mao de obra") || lower.includes("servico") || lower.includes("m.o")) cat = "Mão de Obra";
+            else if (lower.includes("oleo") || lower.includes("fluido") || lower.includes("aditivo")) cat = "Óleo/Fluido";
+            else if (lower.includes("retifica") || lower.includes("usinagem")) cat = "Retífica";
+            else if (lower.includes("limpeza") || lower.includes("flush") || lower.includes("combustivel")) cat = "Insumo";
 
             addMultiItemRow({
-              desc: xProd.toUpperCase(),
-              valor: vProd,
-              tipo: tipo,
+              desc: desc.toUpperCase(),
+              valor: val,
+              tipo: cat,
               subsistema: "Motor/Trem de Força"
             });
             count++;
           }
-        });
-
-        if (count === 0) {
-          const vNF = Number(xmlDoc.querySelector("vNF")?.textContent || 0);
-          addMultiItemRow({ desc: `Manutenção Conforme Documento #${numDoc || fileName}`, valor: vNF, tipo: "Peça" });
-          count = 1;
         }
-      } catch (err) {
-        console.error('Erro ao processar lote XML:', err);
-      }
+      });
 
-      return { itemCount: count, numDoc: numDoc };
+      return { count: count, numDoc: numDoc };
     }
 
     function parseDocumentTextContentBatch(file, textContent) {
@@ -1481,55 +1625,14 @@
       }
 
       if (textContent && typeof textContent === 'string') {
-        const lines = textContent.split(/\r?\n/);
-        
-        lines.forEach(line => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
-
-          const cnpjMatch = trimmed.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
-          if (cnpjMatch && !document.getElementById('formOficinaCNPJ').value) {
-            document.getElementById('formOficinaCNPJ').value = cnpjMatch[0];
-          }
-
-          if (/oficina|mecanica|retifica|garage|auto|ltda|eireli/i.test(trimmed) && !document.getElementById('formOficinaNome').value) {
-            document.getElementById('formOficinaNome').value = trimmed.toUpperCase();
-          }
-
-          const docMatch = trimmed.match(/(?:OS|NF|NOTA|RECIBO|DOC)\s*[:#\.\-]?\s*(\d+)/i);
-          if (docMatch && !numDoc) {
-            numDoc = docMatch[1];
-          }
-
-          const itemMatch = trimmed.match(/•?\s*(.*?)\s*[-:]?\s*(?:R\$\s*)?([\d.,]+)\s*(?:\((.*?)\))?$/);
-          if (itemMatch) {
-            const desc = itemMatch[1].replace(/^[•\-\*]\s*/, '').trim();
-            const valStr = itemMatch[2].replace(',', '.');
-            const val = parseFloat(valStr);
-
-            if (desc && !isNaN(val) && val > 0 && desc.length > 2 && !/TOTAL|SUBTOTAL|DESCONTO|CNPJ|DATA/i.test(desc)) {
-              let cat = itemMatch[3] ? itemMatch[3].trim() : "Peça";
-              const lower = desc.toLowerCase();
-              if (lower.includes("mao de obra") || lower.includes("servico") || lower.includes("m.o") || lower.includes("reforma")) cat = "Mão de Obra";
-              else if (lower.includes("oleo") || lower.includes("fluido") || lower.includes("aditivo")) cat = "Óleo/Fluido";
-              else if (lower.includes("retifica") || lower.includes("usinagem")) cat = "Retífica";
-              else if (lower.includes("limpeza") || lower.includes("flush") || lower.includes("gas")) cat = "Insumo";
-
-              addMultiItemRow({
-                desc: desc.toUpperCase(),
-                valor: val,
-                tipo: cat,
-                subsistema: "Motor/Trem de Força"
-              });
-              count++;
-            }
-          }
-        });
+        const res = parseCleanTextLines(textContent, numDoc);
+        count = res.count;
+        if (res.numDoc) numDoc = res.numDoc;
       }
 
       if (count === 0) {
         addMultiItemRow({
-          desc: `Ingestão de Documento: ${file.name.replace(/\.[^/.]+$/, "")}`,
+          desc: `Documento Anexado: ${file.name.replace(/\.[^/.]+$/, "")}`,
           valor: 0.00,
           tipo: "Peça",
           subsistema: "Motor/Trem de Força"
@@ -1539,8 +1642,7 @@
 
       return { itemCount: count, numDoc: numDoc };
     }
-
-    function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
+function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       const aiBadge = document.getElementById('aiStatusBadge');
       const aiStatusText = document.getElementById('aiStatusText');
 
