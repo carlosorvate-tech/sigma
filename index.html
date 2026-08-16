@@ -150,6 +150,11 @@
           <i data-lucide="file-text" class="w-4 h-4"></i>
           <span>Emitir Dossiê PDF</span>
         </button>
+
+        <button onclick="abrirModalDiagnostico()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-cyan-400 hover:bg-cyan-500/10 transition">
+          <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+          <span>Diagnóstico Preliminar IA</span>
+        </button>
       </div>
     </nav>
 
@@ -227,6 +232,11 @@
             <button onclick="exportPdfDossier(); closeMobileDrawer();" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-purple-400 hover:bg-purple-500/10">
               <i data-lucide="file-text" class="w-4 h-4"></i>
               <span>Emitir Dossiê PDF</span>
+            </button>
+
+            <button onclick="abrirModalDiagnostico(); closeMobileDrawer();" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-cyan-400 hover:bg-cyan-500/10">
+              <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+              <span>Diagnóstico Preliminar IA</span>
             </button>
           </div>
         </div>
@@ -954,6 +964,100 @@
     });
 
     
+    
+    // --- LÓGICA DO DIAGNÓSTICO IA ---
+    function abrirModalDiagnostico() {
+      const v = getSelectedVehicle();
+      const veiculoAtualId = v ? v.ID : state.selectedVehicleId;
+      if(!veiculoAtualId) {
+        alert("Selecione um veículo ativo primeiro.");
+        return;
+      }
+      document.getElementById('modalDiagnostico').classList.remove('hidden');
+      document.getElementById('diagResultados').innerHTML = '';
+      document.getElementById('diagResultados').classList.add('hidden');
+      document.getElementById('diagRelato').value = '';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function fecharModalDiagnostico() {
+      document.getElementById('modalDiagnostico').classList.add('hidden');
+    }
+
+    function acionarDiagnosticoIA() {
+      const v = getSelectedVehicle();
+      const veiculoAtualId = v ? v.ID : state.selectedVehicleId;
+      if(!veiculoAtualId) {
+        alert("Selecione um veículo ativo primeiro.");
+        return;
+      }
+
+      const relato = document.getElementById('diagRelato').value;
+      if(!relato.trim()) { alert("Descreva o sintoma."); return; }
+      
+      document.getElementById('btnGerarDiag').classList.add('hidden');
+      document.getElementById('diagLoader').classList.remove('hidden');
+      document.getElementById('diagResultados').classList.add('hidden');
+      
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(resposta) {
+          document.getElementById('diagLoader').classList.add('hidden');
+          document.getElementById('btnGerarDiag').classList.remove('hidden');
+          
+          try {
+            const diag = typeof resposta === 'string' ? JSON.parse(resposta) : resposta;
+            let html = `<div class="p-3 bg-slate-900 border-l-4 border-amber-500 rounded-xl text-xs text-slate-200"><strong>Resumo:</strong> ${diag.resumoExecutivo}</div>`;
+            
+            if(diag.arvoreCausas && diag.arvoreCausas.length > 0) {
+              html += `<h4 class="text-xs font-bold text-slate-300 mt-4 mb-2 uppercase border-b border-slate-700/80 pb-1 tracking-wider">Hipóteses & Testes de Bancada</h4>`;
+              diag.arvoreCausas.forEach(c => {
+                html += `
+                <div class="bg-slate-900/70 border border-slate-700 rounded-xl p-3 mb-2.5">
+                  <div class="flex justify-between items-center mb-1.5 flex-wrap gap-1">
+                    <span class="text-cyan-300 font-bold text-xs">${c.componenteSuspeito}</span>
+                    <span class="bg-slate-800 text-[10px] px-2 py-0.5 rounded text-cyan-400 border border-slate-700 font-mono font-bold">${c.probabilidadePercentual}% de chance</span>
+                  </div>
+                  <p class="text-xs text-slate-300"><strong>Causa Raiz:</strong> ${c.causaRaizProvavel}</p>
+                  <div class="mt-2 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                    <p class="text-[11px] text-emerald-400 font-semibold mb-1">🛠️ Teste Físico Sugerido:</p>
+                    <p class="text-xs text-slate-300 leading-relaxed">${c.procedimentoTeste}</p>
+                  </div>
+                </div>`;
+              });
+            }
+            
+            document.getElementById('diagResultados').innerHTML = html;
+            document.getElementById('diagResultados').classList.remove('hidden');
+          } catch(e) {
+            alert("Erro ao processar retorno da IA. Detalhes no console.");
+            console.error(e, resposta);
+          }
+        }).withFailureHandler(function(err){
+          document.getElementById('diagLoader').classList.add('hidden');
+          document.getElementById('btnGerarDiag').classList.remove('hidden');
+          alert("Falha na comunicação com o servidor.");
+        }).processarDiagnosticoIA(veiculoAtualId, relato);
+      } else {
+        setTimeout(() => {
+          document.getElementById('diagLoader').classList.add('hidden');
+          document.getElementById('btnGerarDiag').classList.remove('hidden');
+          const diag = {
+            resumoExecutivo: "Análise diagnóstica preliminar (Modo Local). Identificado padrão com alta correlação mecânica.",
+            arvoreCausas: [
+              {
+                componenteSuspeito: "Subsistema sob Análise",
+                probabilidadePercentual: 80,
+                causaRaizProvavel: "Desvio operacional conforme sintomas reportados.",
+                procedimentoTeste: "Realizar medições e testes específicos com scanner e inspeção física."
+              }
+            ]
+          };
+          document.getElementById('diagResultados').innerHTML = `<div class="p-3 bg-slate-900 border-l-4 border-amber-500 rounded-xl text-xs text-slate-200"><strong>Resumo:</strong> ${diag.resumoExecutivo}</div>`;
+          document.getElementById('diagResultados').classList.remove('hidden');
+        }, 1000);
+      }
+    }
+
     function abrirModalTermos(isOnboarding = false) {
       const modal = document.getElementById('modalTermosUso');
       if (!modal) return;
@@ -2866,6 +2970,53 @@
       doc.save(`SIGMA_Dossie_${v.PlacaChassi || v.Placa}_${new Date().toISOString().split('T')[0]}.pdf`);
     }
   </script>
+
+  
+  <!-- MODAL: DIAGNÓSTICO PRELIMINAR DE ANOMALIAS (IA & HEURÍSTICA CAUSAL) -->
+  <div id="modalDiagnostico" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="glass-card rounded-2xl max-w-2xl w-full p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-slate-800 shadow-2xl">
+      <!-- Cabeçalho -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-200">Diagnóstico Preliminar de Anomalias (IA)</span>
+        </h3>
+        <button onclick="fecharModalDiagnostico()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <!-- Relato de Sintomas -->
+      <div class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-300">Descreva os sintomas, comportamentos anormais, ruídos ou alertas:</label>
+        <textarea id="diagRelato" rows="3" placeholder="Ex: Tranco ao engatar marcha ré e perda de tração com mensagem 'defeito no câmbio' em subidas; ruído metálico na suspensão dianteira ao passar em lombadas..." class="w-full bg-slate-900 text-xs text-slate-200 rounded-xl p-3 border border-slate-700 focus:outline-none focus:border-cyan-500"></textarea>
+      </div>
+
+      <!-- Botão de Ação & Info -->
+      <div class="flex items-center justify-between pt-1 flex-wrap gap-2">
+        <span class="text-[11px] text-slate-400">Análise causal cruzada com o histórico e motorização do ativo.</span>
+        <button id="btnGerarDiag" onclick="acionarDiagnosticoIA()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-sky-500 hover:from-cyan-500 hover:to-sky-400 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 flex items-center gap-1.5 transition">
+          <i data-lucide="cpu" class="w-4 h-4"></i>
+          <span>Processar Diagnóstico IA</span>
+        </button>
+      </div>
+
+      <!-- Loader de Processamento -->
+      <div id="diagLoader" class="hidden py-6 text-center space-y-3">
+        <div class="inline-block w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-xs font-medium text-cyan-300 animate-pulse">Correlacionando histórico, modelo e sintomas com a base de falhas críticas...</p>
+      </div>
+
+      <!-- Resultados do Diagnóstico -->
+      <div id="diagResultados" class="hidden space-y-3 pt-2">
+      </div>
+
+      <!-- Disclaimer Jurídico / Nota Técnica Just-In-Time -->
+      <div class="pt-3 border-t border-slate-800">
+        <p class="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1.5">
+          <span>ℹ️</span> <strong>Nota Técnica:</strong> Parecer algorítmico consultivo baseado em histórico e sintomas declarados. Não dispensa inspeção física presencial.
+        </p>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL DE TERMOS DE USO & GOVERNANÇA JURÍDICA JUST-IN-TIME -->
   <div id="modalTermosUso" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
