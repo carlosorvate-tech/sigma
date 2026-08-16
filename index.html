@@ -2009,8 +2009,12 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       ];
 
       // Mesclar com Prescrições Customizadas Salvas
-      const customItems = (state.customPrescriptions || []).filter(p => {
-        return String(p.VeiculoID || p.veiculoId || '') === vId;
+            // Filtrar apenas prescrições válidas (rejeitar nomes de arquivos ou lixo)
+      const validCustomItems = (state.customPrescriptions || []).filter(p => {
+        const vMatching = String(p.VeiculoID || p.veiculoId || '') === vId;
+        const interv = String(p.Intervencao || p.intervencao || '').trim();
+        const isFile = /\.(jpeg|jpg|png|webp|pdf|txt|xml)$/i.test(interv);
+        return vMatching && !isFile && interv.length >= 4;
       });
 
       const mergedMap = new Map();
@@ -2020,7 +2024,7 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
         mergedMap.set(key, item);
       });
 
-      customItems.forEach(c => {
+      validCustomItems.forEach(c => {
         const intervencao = c.Intervencao || c.intervencao || '';
         const subsistema = c.Subsistema || c.subsistema || 'Motor/Trem de Força';
         const key = (subsistema + '__' + intervencao).toUpperCase();
