@@ -25,43 +25,43 @@
 
 O Brasil possui uma frota de mais de **115 milhões de veículos** (DENATRAN, 2025). Para a esmagadora maioria desses proprietários, a gestão de manutenção do veículo é feita de uma única maneira: **memória e sorte**.
 
-> *"Quando foi a última troca de óleo? Qual a quilometragem? Já trocou a correia dentada? Quanto já gastei nesse carro?"*
+> *"Quando foi a última troca de óleo? Qual a quilometragem? Já trocou a correia dentada? Quanto já gastei nesse carro? O que significa esse tranco no câmbio?"*
 
-Essas perguntas, aparentemente simples, revelam uma lacuna crítica: **não existe, para o motorista comum ou pequeno frotista, um sistema acessível, contínuo e inteligente que registre, analise e prescreva manutenções veiculares** com base em dados reais — e não em palpites.
+Essas perguntas revelam uma lacuna crítica: **não existe, para o motorista comum ou pequeno frotista, um sistema acessível, contínuo e inteligente que registre, analise, prescreva e diagnostique manutenções veiculares** com base em dados reais — e não em palpites.
 
 ### 1.2. As Consequências da Gestão Inexistente
 
-A ausência de controle estruturado gera três categorias de dano:
+A ausência de controle estruturado e diagnóstico precoce gera três categorias de dano:
 
 | Categoria | Consequência Direta | Impacto |
 |---|---|---|
-| **Patrimonial** | Falhas destrutivas evitáveis (motor fundido, câmbio travado, superaquecimento) | Perda de R$ 5.000 a R$ 25.000+ por evento |
-| **Segurança** | Componentes de frenagem, direção ou suspensão degradados sem aviso | Risco de acidente fatal |
-| **Financeira** | Impossibilidade de comprovar histórico em revenda; pagamento duplicado por serviços | Desvalorização de 15-30% do ativo |
+| **Patrimonial** | Falhas destrutivas evitáveis (motor fundido, câmbio AL4 travado, superaquecimento) | Perda de R$ 5.000 a R$ 25.000+ por evento |
+| **Segurança** | Componentes de frenagem, direção ou suspensão degradados sem aviso | Risco de acidente grave ou fatal |
+| **Financeira** | Impossibilidade de comprovar histórico em revenda; troca de peças às cegas (*parts cannon*) | Desvalorização de 15-30% do ativo |
 
 ### 1.3. O Público Afetado
 
-- **Proprietários individuais** que dependem do veículo para trabalho e mobilidade.
-- **Pequenos frotistas** (2 a 20 veículos) sem acesso a sistemas ERP/CMMS industriais.
-- **Motoristas de aplicativo** que rodam altas quilometragens em regime severo.
-- **Famílias** que compartilham veículos e perdem rastreabilidade de quem fez o quê.
-- **Compradores de veículos usados** que não têm como auditar o histórico real.
+- **Proprietários individuais** que dependem do veículo para trabalho e mobilidade diária.
+- **Pequenos frotistas** (2 a 20 veículos) sem acesso a sistemas ERP/CMMS industriais de alto custo.
+- **Motoristas de aplicativo e frotas leves** que rodam altas quilometragens em regime severo contínuo.
+- **Famílias** que compartilham veículos e perdem rastreabilidade de intervenções anteriores.
+- **Compradores de veículos usados** que buscam auditar a integridade real do bem antes da compra.
 
 ### 1.4. O Propósito do SIGMA
 
 O **SIGMA** foi concebido para eliminar essa lacuna com uma premissa radical:
 
-> **Todo veículo merece um prontuário técnico — tão rigoroso quanto um prontuário médico.**
+> **Todo veículo merece um prontuário técnico — tão rigoroso e auditável quanto um prontuário médico.**
 
-O sistema transforma dados dispersos (notas fiscais, ordens de serviço, manuais do fabricante, memória do proprietário) em **inteligência prescritiva**, entregando ao dono do veículo o controle total sobre:
+O sistema transforma dados dispersos (notas fiscais, ordens de serviço, manuais do fabricante, memória do proprietário e relatos de anomalias) em **inteligência prescritiva e diagnóstica**, entregando ao dono do veículo o controle total sobre:
 
 1. 🛡️ **Preservação do Ativo** — saber exatamente o estado de cada subsistema.
-2. ⚠️ **Prevenção de Falhas Críticas** — alertas antecipados de risco destrutivo.
+2. ⚠️ **Prevenção de Falhas Críticas** — alertas antecipados de risco destrutivo e diagnóstico IA de sintomas.
 3. 📊 **Auditoria Financeira & Causal** — quanto, quando, onde e por quê cada real foi investido.
 
 ---
 
-## 2. Telas do Aplicativo: Função, Detalhes e Resultados
+## 2. Telas e Módulos do Aplicativo: Função, Detalhes e Resultados
 
 ### 2.1. Tela de Aceite de Termos de Uso (Clickwrap de Onboarding)
 
@@ -73,9 +73,9 @@ Apresenta os Termos de Uso, Governança e Limites de Responsabilidade Técnica d
 **Detalhes técnicos:**
 - Verificação via `localStorage` (chave `sigma_termo_aceite_v1`).
 - Após o aceite, o sistema nunca mais exibe o modal automaticamente.
-- O usuário pode reler os termos a qualquer momento via link no rodapé institucional.
+- O usuário pode reler os termos a qualquer momento via link estético no rodapé institucional.
 
-**Resultado esperado:** Conformidade legal (Lei 12.965/2014 — Marco Civil da Internet) e transparência total sobre a natureza consultiva do sistema.
+**Resultado esperado:** Conformidade legal plena (Lei 12.965/2014 — Marco Civil da Internet) e transparência total sobre a natureza consultiva do sistema.
 
 ---
 
@@ -95,7 +95,7 @@ Apresenta os Termos de Uso, Governança e Limites de Responsabilidade Técnica d
 - **Semáforo de Alertas**: Contadores numéricos para itens *Em Dia*, *Crítico* e *Atenção*.
 - **Widget de Telemetria**: Indicadores `MOTOR ATIVO`, `100% AUDITABILIDADE` e `MARCO ZERO`.
 
-**Resultado esperado:** O usuário sabe, em menos de 2 segundos, qual é a "temperatura" geral do veículo — sem precisar ler nenhuma tabela.
+**Resultado esperado:** O usuário sabe, em menos de 2 segundos, qual é a "temperatura" geral do veículo — sem precisar navegar por tabelas complexas.
 
 ---
 
@@ -108,19 +108,19 @@ Apresenta os Termos de Uso, Governança e Limites de Responsabilidade Técnica d
 
 **Detalhes:**
 - Cada diretriz é um card expansível contendo:
-  - **Nome da intervenção** (ex: *"Troca de Óleo do Motor e Filtro de Óleo"*).
-  - **Subsistema** (Motor, Trem de Força, Arrefecimento, Freios, etc.).
+  - **Nome da intervenção** (ex: *"Troca de Fluido ATF Câmbio AL4 e Eletroválvulas"*).
+  - **Subsistema** (Motor, Transmissão, Arrefecimento, Freios, Suspensão, Elétrica).
   - **Intervalo prescrito** em KM e meses.
-  - **Especificação técnica** (tipo de óleo, marca, norma).
+  - **Especificação técnica** (tipo de óleo, marca, norma de homologação).
   - **Classificação de risco** (`CRÍTICO DESTRUTIVO`, `INSPECIONÁVEL`, `EM DIA`).
-  - **Diretiva de precaução técnica** — texto descritivo do risco caso a manutenção não seja realizada.
+  - **Diretiva de precaução técnica** — texto descritivo do risco caso a manutenção seja negligenciada.
   - **Ações**: Botão para registrar Parecer Técnico de inspeção ou criar Ocorrência de Marco Zero.
-- **Protocolo do Marco Zero**: Quando o veículo é cadastrado pela primeira vez, todas as diretrizes começam em estado `CRÍTICO SEM HISTÓRICO` — significando que o sistema não pode garantir que aquela manutenção foi feita. O proprietário deve então "zerar" cada item com evidência (data, KM, oficina).
+- **Protocolo do Marco Zero**: Quando o veículo é cadastrado, todas as diretrizes iniciam em estado `CRÍTICO SEM HISTÓRICO`. O proprietário então "zera" cada item com evidência documental (data, KM, oficina).
 - **Dois botões de ação no cabeçalho**:
-  - `[ + Nova Diretriz de Manutenção ]` — cadastro manual rápido.
-  - `[ Recalcular / Ingerir Fontes ]` — ingestão multimodal (IA + OCR + texto + URL).
+  - `[ + Nova Diretriz de Manutenção ]` — cadastro manual rápido com merge por chave composta.
+  - `[ Recalcular / Ingerir Fontes ]` — ingestão multimodal inteligente (IA + OCR + texto + URL).
 
-**Resultado esperado:** O proprietário enxerga, de forma cristalina, tudo que precisa ser feito no veículo, ordenado por urgência — e pode agir diretamente a partir de cada card.
+**Resultado esperado:** O proprietário enxerga tudo o que precisa ser feito no veículo, ordenado por gravidade de risco, com ações imediatas a um clique.
 
 ---
 
@@ -129,16 +129,16 @@ Apresenta os Termos de Uso, Governança e Limites de Responsabilidade Técnica d
 **Localização:** Segunda aba do sistema.
 
 **Função:**
-Registro cronológico completo de todos os eventos de manutenção realizados no veículo: preventivas, corretivas, emergenciais, inspeções.
+Registro cronológico completo de todos os eventos de manutenção realizados no veículo: preventivas, corretivas, emergenciais e inspeções.
 
 **Detalhes:**
 - Tabela com colunas: Data/Doc, Placa, KM, Tipo, Composição de Peças & Mão de Obra, Valor Total, Ações.
-- Cada linha representa uma Ordem de Serviço (OS) completa.
-- A composição de peças é exibida item a item, com tipo (Peça, Mão de Obra, Óleo/Fluido, Retífica, Insumo) e valor unitário.
-- Suporte à **deduplicação automática** de registros idênticos (mesmo serviço, data e valor), prevenindo lançamentos duplicados por importação.
-- Ações por registro: **Editar** (reabrir formulário preenchido) e **Excluir** (com confirmação).
+- Cada linha representa uma Ordem de Serviço (OS) consolidada.
+- Composição de peças exibida item a item com categoria (Peça, Mão de Obra, Óleo/Fluido, Retífica, Insumo) e valor unitário.
+- **Deduplicação Inteligente**: Algoritmo canônico que previne lançamentos duplicados por importações repetidas.
+- Ações por registro: **Editar** (reabertura do formulário preenchido) e **Excluir** (com confirmação segura).
 
-**Resultado esperado:** O veículo ganha um "extrato bancário" de toda intervenção mecânica já realizada — prova documental para revenda, garantia ou disputa.
+**Resultado esperado:** O veículo ganha um "extrato bancário e técnico" auditável de toda intervenção mecânica já realizada.
 
 ---
 
@@ -147,66 +147,85 @@ Registro cronológico completo de todos os eventos de manutenção realizados no
 **Localização:** Terceira aba do sistema.
 
 **Função:**
-Visão analítica e financeira consolidada sobre os investimentos realizados no veículo.
+Visão analítica e financeira consolidada sobre os investimentos realizados no ativo veicular.
 
 **Detalhes:**
-- **Gráfico de Pareto** (barras + linha acumulada): identifica visualmente quais categorias de manutenção concentram a maior parte dos gastos (princípio 80/20).
-- **Lista de Custos por Categoria**: ranking de investimento por subsistema (Motor, Freios, Suspensão, etc.) com barras de progresso proporcionais.
-- **Investimento Total Acumulado**: somatório geral de todos os registros, exibido em destaque.
+- **Gráfico de Pareto** (barras de custo + curva de percentual acumulado): identifica visualmente quais subsistemas concentram a maior parte dos gastos (princípio 80/20).
+- **Lista de Custos por Categoria**: ranking de investimento por subsistema com barras de progresso proporcionais.
+- **Investimento Total Acumulado**: somatório financeiro geral em destaque.
 
-**Resultado esperado:** O proprietário identifica em 5 segundos *onde está indo seu dinheiro* — se o motor consome 60% dos gastos, é sinal de investigação. Permite decisões estratégicas: reparar ou substituir o ativo.
+**Resultado esperado:** O proprietário identifica onde o orçamento é drenado, embasando decisões estratégicas: manter, reparar ou substituir o veículo.
 
 ---
 
-### 2.6. Modal: Nova Ocorrência de Manutenção
+### 2.6. Modal: Diagnóstico Preliminar de Anomalias (IA & Heurística Causal)
 
-**Acionamento:** Botão "Nova Ocorrência" na sidebar ou topbar.
+**Acionamento:** Botão `[ Diagnóstico Preliminar IA ]` na Sidebar Desktop ou na Gaveta Mobile.
 
 **Função:**
-Formulário completo para registro de intervenções mecânicas com suporte a múltiplos itens por OS.
+Motor de inteligência artificial e heurística causal automotiva que analisa relatos de sintomas em linguagem natural, correlacionando-os com o modelo, quilometragem e histórico de manutenções do ativo.
+
+**Detalhes:**
+- **Entrada em Linguagem Natural**: Textarea onde o usuário descreve ruídos, comportamentos anormais, trancos, luzes no painel ou falhas intermitentes.
+- **Processamento Causal Especializado**: O backend processa o relato contra matrizes especializadas (ex: transmissões automáticas AL4/AT8, gestão térmica EW10/TU5, suspensão e buchas, ignição secundária e injeção).
+- **Saída Estruturada com 3 Níveis**:
+  1. *Resumo Executivo*: Parecer contextualizado cruzando o sintoma com a KM atual do ativo.
+  2. *Árvore de Causas Raiz*: Hipóteses diagnosticadas com probabilidade percentual calculada (ex: *85% de chance*).
+  3. *Testes de Bancada & Scanner Sugeridos*: Procedimentos físicos precisos para orientar o mecânico na oficina.
+- **Micro-Disclaimer Just-In-Time**: Nota técnica legal reforçando o caráter consultivo do parecer.
+
+**Resultado esperado:** O proprietário não vai mais à oficina "no escuro". Ele chega munido de hipóteses fundamentadas e procedimentos de teste específicos, eliminando diagnósticos incorretos e trocas desnecessárias de peças.
+
+---
+
+### 2.7. Modal: Nova Ocorrência de Manutenção
+
+**Acionamento:** Botão "Nova Ocorrência" na sidebar ou topbar móvel.
+
+**Função:**
+Formulário dinâmico para registro de intervenções mecânicas com suporte a múltiplos itens por Ordem de Serviço.
 
 **Detalhes:**
 - Campos: Data, KM, Tipo (Preventiva, Corretiva, Emergencial, Inspeção), Oficina/Mecânico, CNPJ da Oficina, Cidade, Nº da OS.
-- Tabela dinâmica de itens: cada linha contém Tipo do item (Peça, Mão de Obra, Óleo/Fluido, Retífica, Insumo), Descrição, Subsistema e Valor Unitário.
-- Cálculo automático do valor total.
-- Suporte para adicionar e remover linhas livremente.
+- Tabela dinâmica de itens: cada linha contém Tipo do item, Descrição, Subsistema e Valor Unitário.
+- Cálculo automático do valor total em tempo real.
 
-**Resultado esperado:** O usuário registra qualquer evento mecânico em menos de 2 minutos, com rastreabilidade granular de cada real investido.
+**Resultado esperado:** Registro completo de qualquer evento de manutenção em menos de 2 minutos.
 
 ---
 
-### 2.7. Modal: Nova Diretriz Prescritiva (Cadastro Manual)
+### 2.8. Modal: Nova Diretriz Prescritiva (Cadastro Manual)
 
 **Acionamento:** Botão `[ + Nova Diretriz de Manutenção ]` no Plano Prescritivo.
 
 **Função:**
-Permite ao usuário ou técnico inserir manualmente uma diretriz que não consta no plano do fabricante (ex: recomendação de mecânico, recall, etc.).
+Permite ao usuário ou técnico inserir manualmente uma diretriz customizada (ex: recomendação de boletim técnico, preparação ou uso específico).
 
 **Detalhes:**
-- Campos: Nome da Intervenção, Subsistema, Tipo (Preventiva/Corretiva/Inspeção), Intervalo em KM, Intervalo em Meses, Especificação Técnica, Origem/Fonte e Texto de Precaução.
-- Merge inteligente por chave composta (subsistema + intervenção): se já existir, atualiza ao invés de duplicar.
+- Campos: Nome da Intervenção, Subsistema, Tipo, Intervalo em KM, Intervalo em Meses, Especificação Técnica, Origem/Fonte e Texto de Precaução.
+- Merge inteligente por chave composta (subsistema + intervenção): se já existir, atualiza sem duplicar.
 
-**Resultado esperado:** O Plano Prescritivo se torna vivo e editável — não é uma lista estática, mas um documento que evolui com o veículo.
+**Resultado esperado:** O Plano Prescritivo se torna flexível e adaptável a qualquer necessidade específica do veículo.
 
 ---
 
-### 2.8. Modal: Ingestão Multimodal & Recálculo (Motor de IA)
+### 2.9. Modal: Ingestão Multimodal & Recálculo (Motor de IA)
 
 **Acionamento:** Botão `[ Recalcular / Ingerir Fontes ]` no Plano Prescritivo.
 
 **Função:**
-Motor de processamento que aceita múltiplas fontes de dados para gerar ou complementar o Plano Prescritivo.
+Motor de ingestão de dados que aceita múltiplas fontes para gerar ou complementar o Plano Prescritivo.
 
 **Detalhes:**
-- **4 modos de ingestão**: Automático (plano OEM por regime de uso), Upload de Arquivo (PDF/imagem de manual ou OS), URL (link para manual online) e Texto Livre (colagem de recomendações).
+- **4 modos de ingestão**: Automático (plano OEM por regime de uso), Upload de Arquivo (PDF/imagem de manual ou OS), URL (link web) e Texto Livre.
 - **Seleção de Regime de Uso**: Normal, Severo Urbano, Severo Estrada, Frota, Taxi.
-- **Estratégia de Merge**: Substituição total ou Merge Aditivo (preserva itens manuais, adiciona novos).
+- **Estratégia de Merge**: Substituição total ou Merge Aditivo blindado.
 
-**Resultado esperado:** O sistema absorve conhecimento de qualquer fonte — do PDF do manual do fabricante ao bilhete do mecânico — e transforma em diretrizes prescritivas estruturadas.
+**Resultado esperado:** Capacidade de absorver manuais de fábrica ou notas técnicas e convertê-los em diretrizes acionáveis.
 
 ---
 
-### 2.9. Modal: Cadastro e Edição de Veículo
+### 2.10. Modal: Cadastro e Edição de Veículo
 
 **Acionamento:** Sidebar → "Cadastrar Novo Veículo" ou "Editar Veículo Ativo".
 
@@ -215,29 +234,28 @@ CRUD completo do ativo veicular.
 
 **Detalhes:**
 - Campos: Marca, Modelo, Ano Fabricação, Ano Modelo, Placa (Chassi), Motorização, Combustível, Transmissão, Regime de Uso e KM Atual.
-- Modo edição: preenchimento automático dos campos com dados do veículo ativo.
-- Ação destrutiva: botão de exclusão do veículo (com confirmação) — remove o ativo e todos os registros associados.
+- Ação de exclusão com confirmação segura e limpeza em cascata.
 
-**Resultado esperado:** O sistema suporta múltiplos veículos com alternância instantânea via seletor no topo do painel.
+**Resultado esperado:** Suporte multi-veículo com alternância instantânea de contexto.
 
 ---
 
-### 2.10. Modal: Parecer Técnico de Inspeção
+### 2.11. Modal: Parecer Técnico de Inspeção
 
 **Acionamento:** Botão "Registrar Parecer" em cada diretriz prescritiva.
 
 **Função:**
-Permite que um mecânico ou técnico registre um laudo de inspeção presencial sobre um item prescritivo — confirmando ou descartando a necessidade de intervenção.
+Permite que um mecânico registre um laudo presencial sobre um item prescritivo — atestando conformidade física.
 
 **Detalhes:**
-- Campos: Item Prescrevido (pré-preenchido), Data da Inspeção, KM, Oficina/Mecânico Responsável, Texto do Parecer.
-- Nota técnica legal (micro-disclaimer): *"Parecer algorítmico consultivo baseado em histórico e sintomas declarados. Não dispensa inspeção física presencial."*
+- Campos: Item Prescrito (pré-preenchido), Data da Inspeção, KM, Oficina/Mecânico Responsável, Laudo Técnico.
+- Micro-disclaimer legal de responsabilidade integrado.
 
-**Resultado esperado:** Cria-se a ponte entre o prescrito (algoritmo) e o realizado (humano) — evidência documental de que o item foi inspecionado por profissional habilitado.
+**Resultado esperado:** Documentação formal de que o item foi inspecionado presencialmente por profissional habilitado.
 
 ---
 
-### 2.11. Dossiê Veicular em PDF (Auditoria Forense)
+### 2.12. Dossiê Veicular em PDF (Auditoria Forense)
 
 **Acionamento:** Sidebar → "Emitir Dossiê PDF".
 
@@ -245,25 +263,24 @@ Permite que um mecânico ou técnico registre um laudo de inspeção presencial 
 Geração instantânea de documento técnico consolidado em formato PDF para impressão, envio ou arquivamento.
 
 **Detalhes:**
-- **Seção 1**: Quadro de Gestão de Riscos — todos os itens prescritivos com classificação de risco e diretiva de precaução.
-- **Seção 2**: Histórico de Manutenções — todos os eventos com composição detalhada de peças e valores.
-- **Rodapé**: Declaração dos 3 Pilares SIGMA em todas as páginas.
-- **Box Forense Final**: Hash SHA-256 de integridade documental, data/hora de emissão, e selo de autenticidade institucional da Infinitus, em conformidade com a Lei 12.965/2014.
+- **Seção 1**: Quadro de Gestão de Riscos — todas as diretrizes com status e precaução.
+- **Seção 2**: Histórico de Manutenções — eventos com composição detalhada de peças e valores.
+- **Box Forense Final**: Hash SHA-256 de integridade documental, data/hora de emissão e selo institucional da Infinitus (Lei 12.965/2014).
 
-**Resultado esperado:** O proprietário possui um documento com validade rastreável — útil para revenda, seguro, perícia, garantia judicial ou simplesmente para guardar no porta-luvas digital.
+**Resultado esperado:** Prontuário com validade auditável para revenda, seguradoras, perícia ou garantia.
 
 ---
 
-### 2.12. Sidebar & Navegação
+### 2.13. Sidebar & Navegação
 
 **Função:**
-Centro de comando com navegação entre módulos, ações de gestão de ativos e seletor de veículo.
+Centro de comando responsivo com navegação entre módulos, ações de gestão e seletor de ativo.
 
 **Detalhes:**
-- **Desktop**: Sidebar fixa lateral com seções: Identidade do produto, Seletor de Veículo, Botão Nova Ocorrência, Navegação Operacional (3 abas), Ações de Gestão de Ativos (Cadastrar, Editar, Emitir Dossiê), e Rodapé de versão com indicador de status operacional.
-- **Mobile**: Topbar compacta + Drawer lateral deslizante + Bottom Navigation Bar fixa com 4 ícones.
+- **Desktop**: Sidebar fixa lateral com seções: Identidade nativa, Seletor de Veículo, Botão Nova Ocorrência, Navegação Operacional (3 abas), Ações de Gestão de Ativos (Cadastrar, Editar, Dossiê PDF, Diagnóstico IA) e Rodapé com status do sistema.
+- **Mobile**: Topbar compacta + Drawer lateral deslizante + Bottom Navigation Bar fixa.
 
-**Resultado esperado:** Navegação fluida e responsiva em qualquer dispositivo — do desktop do escritório ao celular no pátio da oficina.
+**Resultado esperado:** Experiência de uso fluida em smartphones, tablets e computadores de mesa.
 
 ---
 
@@ -281,104 +298,106 @@ graph TD
     
     SIGMA["SIGMA<br/>CMMS Automotivo"]
 
-    P -->|"Cadastra veiculo,<br/>lanca ocorrencias,<br/>consulta plano"| SIGMA
-    M -->|"Registra parecer tecnico,<br/>fornece dados de OS"| SIGMA
+    P -->|"Cadastra veiculo,<br/>lanca ocorrencias,<br/>relata sintomas IA"| SIGMA
+    M -->|"Registra parecer tecnico,<br/>executa testes sugeridos"| SIGMA
     SIGMA -->|"Emite Dossie PDF<br/>com hash forense"| C
     SIGMA -->|"Fornece prontuario<br/>auditavel"| S
-    F -->|"Gerencia multiplos<br/>ativos"| SIGMA
-    SIGMA -->|"Prescreve manutencoes,<br/>calcula risco,<br/>alerta falhas"| P
-    SIGMA -->|"Informa historico<br/>completo ao tecnico"| M
+    F -->|"Gerencia multiplos<br/>ativos e custos"| SIGMA
+    SIGMA -->|"Prescreve manutencoes,<br/>diagnostica anomalias,<br/>calcula risco"| P
+    SIGMA -->|"Informa historico<br/>e hipoteses de bancada"| M
 ```
 
 ### 3.2. Detalhamento por Ator
 
 #### Proprietário do Veículo (Ator Principal)
 
-**Problema:** Não sabe o que já fez, o que precisa fazer, quanto já gastou, e não tem como provar nada disso.
+**Problema:** Não sabe o histórico exato do carro, não sabe quando fazer manutenções, não entende os sintomas de falhas e gasta excessivamente por falta de diagnóstico prévio.
 
 **Como o SIGMA resolve:**
 - Centraliza todo o histórico em um prontuário digital único.
-- Prescreve automaticamente o que precisa ser feito, com prazos em KM e meses.
-- Calcula um Score de Saúde visual e imediato.
-- Emite Dossiê PDF com rastreabilidade forense para qualquer finalidade.
+- Prescreve automaticamente manutenções por KM e tempo.
+- **Diagnóstico IA de Sintomas**: Transforma barulhos e trancos relatados em hipóteses técnicas com testes práticos antes de ir à oficina.
+- Emite Dossiê PDF auditável com hash SHA-256.
 
 ---
 
 #### Mecânico / Oficina (Ator Técnico)
 
-**Problema:** Recebe veículos sem histórico, não sabe o que já foi feito, gasta tempo em diagnóstico e às vezes recomenda trocas desnecessárias (ou deixa de recomendar as necessárias).
+**Problema:** Recebe veículos sem histórico, perde horas em diagnósticos às cegas e tem dificuldade de justificar preventivas para clientes céticos.
 
 **Como o SIGMA resolve:**
-- Apresenta o Plano Prescritivo completo ao mecânico antes da intervenção.
-- Permite que o mecânico registre Pareceres Técnicos de inspeção, criando prova documental de sua avaliação.
-- O histórico completo de peças, marcas e intervalos evita retrabalho e redundância.
+- Acessa o prontuário completo antes de desmontar qualquer componente.
+- Utiliza a árvore de hipóteses e os testes de bancada sugeridos pela IA para validar falhas com rapidez.
+- Registra Pareceres Técnicos de inspeção, criando respaldo documental do serviço realizado.
 
 ---
 
 #### Comprador de Veículo Usado (Ator Eventual)
 
-**Problema:** Não tem como saber se o carro foi bem cuidado. Depende da palavra do vendedor.
+**Problema:** Insegurança total sobre o estado mecânico real do veículo anunciado.
 
 **Como o SIGMA resolve:**
-- O Dossiê PDF funciona como um *Carfax brasileiro* particular — registro granular de cada intervenção, com datas, KMs, oficinas, valores e hash de integridade documental.
-- O Score de Saúde fornece um indicador objetivo e algorítmico do estado do veículo.
+- O Dossiê PDF funciona como um relatório auditável de saúde mecânica com hash de autenticidade documental.
+- O Score de Saúde fornece um indicador objetivo e algorítmico do histórico do ativo.
 
 ---
 
 #### Seguradora / Perito (Ator Institucional)
 
-**Problema:** Em caso de sinistro ou disputa, precisa de evidências documentais de manutenção.
+**Problema:** Necessidade de comprovação documental de manutenções preventivas em litígios ou perícias de sinistro.
 
 **Como o SIGMA resolve:**
-- O Dossiê PDF é emitido com hash SHA-256 de autenticidade, data/hora de emissão e identificação do sistema emissor.
-- O histórico prova (ou demonstra a ausência de) manutenções preventivas em componentes críticos.
-- Conformidade declarada com a Lei 12.965/2014 (Marco Civil da Internet).
+- Dossiê com rastreabilidade forense, hash SHA-256 e conformidade com o Marco Civil da Internet (Lei 12.965/2014).
+- Demonstração inequívoca de cumprimento ou omissão de planos de manutenção.
 
 ---
 
 #### Frotista / Gestor de Frota (Ator Operacional)
 
-**Problema:** Gerenciar múltiplos veículos com planilhas ou anotações manuais é caótico, propenso a erro e não escala.
+**Problema:** Gestão descentralizada de múltiplos veículos em planilhas frágeis, com custos invisíveis de manutenção corretiva.
 
 **Como o SIGMA resolve:**
-- Suporte nativo a múltiplos veículos com alternância instantânea.
-- Dashboard com Pareto de custos identifica quais veículos drenam mais recursos.
-- Protocolo do Marco Zero permite onboarding rápido de veículos novos na frota.
-- Prescrições padronizadas por regime de uso (Normal, Severo Urbano, Frota, Taxi).
+- Multi-veículos nativo com alternância instantânea.
+- Dashboard de Pareto identifica gargalos de custo por subsistema.
+- Protocolo do Marco Zero padroniza a entrada de qualquer novo veículo na frota.
 
 ---
 
 ## 4. Benefícios Além do Problema Principal
 
-O SIGMA foi construído para resolver a ausência de controle de manutenção — mas, ao fazê-lo, produz benefícios colaterais significativos:
+O SIGMA produz vantagens estratégicas em múltiplas frentes:
 
-### 4.1. Valorização do Ativo na Revenda
+### 4.1. Eliminação do "Parts Cannon" & Diagnóstico Preciso
 
-Um veículo com Dossiê SIGMA documentado vale mais. O comprador recebe um prontuário completo, com cada real investido rastreado. Isso transforma a negociação: sai do "eu cuidei bem" para o "aqui está a prova".
+A prática de trocar peças por tentativa e erro custa caro. O módulo de **Diagnóstico IA** orienta a investigação diretamente para as causas mais prováveis e prescreve testes de bancada objetivos (ex: medição de pressão de linha com scanner, teste de continuidade de resistências).
 
-### 4.2. Redução de Custos por Antecipação
+### 4.2. Valorização do Ativo na Revenda
 
-A manutenção preventiva custa, em média, **4 a 8 vezes menos** que a corretiva emergencial. O Plano Prescritivo do SIGMA transforma o proprietário de *reativo* (conserta quando quebra) para *prescritivo* (intervém antes que quebre).
+Um veículo com histórico comprovado pelo Dossiê SIGMA destaca-se no mercado de usados, aumentando a liquidez e permitindo negociação pelo valor real do bem conservado.
 
-### 4.3. Segurança Pessoal e de Terceiros
+### 4.3. Economia por Antecipação (4x a 8x)
 
-Componentes como discos de freio, pastilhas, amortecedores e mangueiras hidráulicas possuem vida útil finita. O SIGMA garante que nenhum desses itens passe despercebido — reduzindo o risco de acidente por falha mecânica.
+Manutenções preventivas custam de **4 a 8 vezes menos** do que reparos emergenciais pós-falha. O SIGMA antecipa intervenções antes do dano destrutivo.
 
-### 4.4. Memória Institucional do Veículo
+### 4.4. Segurança Viária Aumentada
 
-Veículos são frequentemente mantidos por oficinas diferentes ao longo da vida. O SIGMA unifica essa memória fragmentada em um único prontuário — independente de qual oficina fez o serviço.
+Garante que subsistemas críticos (freios, arrefecimento, direção e suspensão) não ultrapassem seus limites de fadiga mecânica.
 
-### 4.5. Disciplina Financeira
+### 4.5. Unificação da Memória Mecânica
 
-O Dashboard de Pareto revela padrões ocultos: *"Gastei R$ 8.000 em motor nos últimos 2 anos — talvez seja hora de trocar o carro."* Sem dados, essa decisão é emocional. Com dados, é estratégica.
+Mesmo que o proprietário troque de oficina ao longo dos anos, todo o histórico permanece unificado no prontuário do ativo.
 
-### 4.6. Governança e Conformidade Legal
+### 4.6. Tomada de Decisão Financeira Baseada em Dados
 
-O sistema implementa transparência jurídica desde o primeiro acesso (Clickwrap de onboarding) e rastreabilidade forense em cada documento emitido (Hash SHA-256). Isso protege tanto o usuário quanto a empresa desenvolvedora.
+O Gráfico de Pareto substitui o achismo por métricas claras sobre a viabilidade econômica de manter ou renovar o veículo.
 
-### 4.7. Acessibilidade Tecnológica
+### 4.7. Conformidade Jurídica & Rastreabilidade Forense
 
-O SIGMA roda como Web App (PWA-ready), acessível de qualquer navegador em qualquer dispositivo — sem instalação, sem Play Store, sem configuração. O banco de dados é uma Google Sheet — infraestrutura que o usuário já possui gratuitamente.
+Clickwrap de onboarding, micro-disclaimers just-in-time e hashes SHA-256 asseguram transparência legal sob a legislação brasileira.
+
+### 4.8. Custo Zero de Infraestrutura (Serverless)
+
+Construído sobre Google Apps Script e Google Sheets, o SIGMA entrega performance corporativa sem mensalidades de servidores ou custos ocultos de banco de dados.
 
 ---
 
@@ -386,9 +405,10 @@ O SIGMA roda como Web App (PWA-ready), acessível de qualquer navegador em qualq
 
 | Atributo | Valor |
 |---|---|
-| **Produto** | SIGMA — Sistema Inteligente para Gestão de Manutenções Automotivas |
+| **Produto** | σ SIGMA — Sistema Inteligente para Gestão de Manutenções Automotivas |
 | **Versão** | 1.0 (Agosto 2026) |
 | **Arquitetura** | Google Apps Script (Backend) + HTML5/Tailwind CSS/JS (Frontend) |
+| **Módulos Core** | Plano Prescritivo • Histórico de OS • Dashboard Pareto • Diagnóstico IA • Dossiê PDF |
 | **Banco de Dados** | Google Sheets (Serverless, Zero-Cost) |
 | **Hospedagem** | Google Cloud (via Apps Script Web App) |
 | **Licença de Uso** | Proprietária — Infinitus Sistemas Inteligentes Ltda |
@@ -405,7 +425,7 @@ O SIGMA roda como Web App (PWA-ready), acessível de qualquer navegador em qualq
 *Este documento é propriedade intelectual da Infinitus Sistemas Inteligentes Ltda.*
 *Reprodução, distribuição ou uso comercial sem autorização prévia é vedado.*
 
-**SIGMA — Porque todo veículo merece um prontuário.**
+**σ SIGMA — Porque todo veículo merece um prontuário.**
 
 </div>
 ]]>
