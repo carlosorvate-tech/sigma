@@ -1283,12 +1283,15 @@
         }
       }
 
+      const dadosVeiculo = `${v.Marca || 'Citroën'} ${v.Modelo || 'C4 Pallas'} (${v.AnoFabricacao || 2009}/${v.AnoModelo || 2009}) ${v.Motorizacao || '2.0 16V EW10A'} ${v.Combustivel || 'FLEX'} ${v.TipoTransmissao || 'Automático Convencional AL4'} - Odômetro: ${Number(v.KMAtual || 191706).toLocaleString('pt-BR')} KM`;
+
       const dadosIngestao = {
         veiculoId: v.ID,
         tipoFonte: state.activeIngestionTab.toUpperCase(),
         payload: payloadData,
         regimeUso: regimeUso,
-        modoMerge: modoMerge
+        modoMerge: modoMerge,
+        dadosVeiculo: dadosVeiculo
       };
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -2171,29 +2174,33 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
 
       const mergedMap = new Map();
 
-      defaultItems.forEach(item => {
-        const key = (item.subsistema + '__' + item.intervencao).toUpperCase();
-        mergedMap.set(key, item);
-      });
-
-      validCustomItems.forEach(c => {
-        const intervencao = c.Intervencao || c.intervencao || '';
-        const subsistema = c.Subsistema || c.subsistema || 'Motor/Trem de Força';
-        const key = (subsistema + '__' + intervencao).toUpperCase();
-        
-        mergedMap.set(key, {
-          dbId: c.ID || c.id || '',
-          intervencao: intervencao,
-          subsistema: subsistema,
-          tipo: c.Tipo || c.tipo || 'PREVENTIVA',
-          intervalo_km: Number(c.IntervaloKM || c.intervalo_km || 10000),
-          intervalo_meses: Number(c.IntervaloMeses || c.intervalo_meses || 12),
-          especificacao_tecnica: c.EspecificacaoTecnica || c.especificacao_tecnica || 'Conforme especificação documental',
-          origem_fonte: c.OrigemFonte || c.origem_fonte || 'MANTENEDOR_ESPECIALISTA',
-          texto_precaucao: c.TextoPrecaucao || c.texto_precaucao || 'Diretriz técnica sob acompanhamento.',
-          palavrasChave: [intervencao.toLowerCase()]
+      if (validCustomItems.length === 0) {
+        // Se ainda não há nenhuma prescrição salva na planilha para este veículo, carrega o default inicial
+        defaultItems.forEach(item => {
+          const key = (item.subsistema + '__' + item.intervencao).toUpperCase();
+          mergedMap.set(key, item);
         });
-      });
+      } else {
+        // Se já existem prescrições salvas na planilha, usa EXCLUSIVAMENTE o banco de dados consolidado
+        validCustomItems.forEach(c => {
+          const intervencao = c.Intervencao || c.intervencao || '';
+          const subsistema = c.Subsistema || c.subsistema || 'Motor/Trem de Força';
+          const key = (subsistema + '__' + intervencao).toUpperCase();
+          
+          mergedMap.set(key, {
+            dbId: c.ID || c.id || '',
+            intervencao: intervencao,
+            subsistema: subsistema,
+            tipo: c.Tipo || c.tipo || 'PREVENTIVA',
+            intervalo_km: Number(c.IntervaloKM || c.intervalo_km || 10000),
+            intervalo_meses: Number(c.IntervaloMeses || c.intervalo_meses || 12),
+            especificacao_tecnica: c.EspecificacaoTecnica || c.especificacao_tecnica || 'Conforme especificação documental',
+            origem_fonte: c.OrigemFonte || c.origem_fonte || 'MANUAL_OEM_FABRICANTE',
+            texto_precaucao: c.TextoPrecaucao || c.texto_precaucao || 'Diretriz técnica sob acompanhamento.',
+            palavrasChave: [intervencao.toLowerCase()]
+          });
+        });
+      }
 
       // Cruzar com os registros de manutenção (state.logs)
       const vehicleLogs = (state.logs || []).filter(l => {
