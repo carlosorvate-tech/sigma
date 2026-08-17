@@ -7,7 +7,7 @@
  * Conta Alvo: carlos.orvate@gmail.com
  */
 
-const DEFAULT_GEMINI_KEY = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+const DEFAULT_GEMINI_KEY = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || '';
 
 const SHEET_NAMES = {
   ATIVOS: 'ATIVOS',
