@@ -980,8 +980,39 @@
   <!-- SCRIPT DE LÓGICA DO SISTEMA -->
   <script>
     let state = {
-      vehicles: [],
-      selectedVehicleId: null,
+      vehicles: [{
+  "ID": "VEIC-001",
+  "id": "VEIC-001",
+  "Marca": "CITROËN",
+  "marca": "CITROËN",
+  "Modelo": "C4 PALLAS",
+  "modelo": "C4 PALLAS",
+  "AnoFabricacao": 2009,
+  "anoFabricacao": 2009,
+  "AnoModelo": 2009,
+  "anoModelo": 2009,
+  "Motorizacao": "2.0 16V EW10A",
+  "motorizacao": "2.0 16V EW10A",
+  "Combustivel": "FLEX",
+  "combustivel": "FLEX",
+  "PlacaChassi": "EEQ-9C28",
+  "placaChassi": "EEQ-9C28",
+  "Placa": "EEQ-9C28",
+  "placa": "EEQ-9C28",
+  "KMAtual": 191900,
+  "kmAtual": 191900,
+  "KMInicial": 191706,
+  "kmInicial": 191706,
+  "RegimeUso": "SEVERO_URBANO",
+  "regimeUso": "SEVERO_URBANO",
+  "TipoTransmissao": "Automático Convencional",
+  "tipoTransmissao": "Automático Convencional",
+  "TipoDistribuicao": "Correia Dentada",
+  "tipoDistribuicao": "Correia Dentada",
+  "OficinaBaseNome": "",
+  "oficinaBaseNome": ""
+}],
+      selectedVehicleId: 'VEIC-001',
       prescriptivePlan: [],
       customPrescriptions: [],
       prestadores: [],
@@ -992,9 +1023,10 @@
 
         
     document.addEventListener('DOMContentLoaded', () => {
-            
       lucide.createIcons();
       setupDropzoneHandlers();
+      renderVehicleSelectors();
+      renderCurrentVehicleView();
       loadData();
     });
 
@@ -1912,27 +1944,49 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
     }
 
     function loadData() {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(onDataLoaded)
-          .withFailureHandler(err => {
-            console.error('Erro ao carregar dados:', err);
-          })
-          .getInitialData();
+      let attempts = 0;
+      const maxAttempts = 40;
+
+      function tryFetch() {
+        attempts++;
+        if (typeof google !== 'undefined' && google.script && typeof google.script.run !== 'undefined') {
+          google.script.run
+            .withSuccessHandler(function(data) {
+              if (data) {
+                onDataLoaded(data);
+              }
+            })
+            .withFailureHandler(function(err) {
+              console.error('Erro ao buscar dados do Sheets:', err);
+            })
+            .getInitialData();
+        } else if (attempts < maxAttempts) {
+          setTimeout(tryFetch, 250);
+        }
       }
+
+      tryFetch();
     }
 
     function onDataLoaded(data) {
-      state.vehicles = data.vehicles || [];
+      if (!data) return;
+      if (Array.isArray(data.vehicles) && data.vehicles.length > 0) {
+        state.vehicles = data.vehicles;
+      }
       state.customPrescriptions = data.prescriptivePlans || [];
+      state.prestadores = data.prestadores || [];
       state.logs = deduplicateLogsList(data.logs || []);
 
-      if (state.vehicles.length > 0 && !state.selectedVehicleId) {
-        state.selectedVehicleId = state.vehicles[0].ID;
+      if (state.vehicles.length > 0) {
+        const found = state.vehicles.find(v => String(v.ID || v.id) === String(state.selectedVehicleId));
+        if (!found) {
+          state.selectedVehicleId = String(state.vehicles[0].ID || state.vehicles[0].id || '');
+        }
       }
 
       renderVehicleSelectors();
       renderCurrentVehicleView();
+      if (window.lucide) lucide.createIcons();
     }
 
     function renderVehicleSelectors() {
