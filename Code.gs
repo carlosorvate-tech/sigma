@@ -157,11 +157,7 @@ function setupSpreadsheet() {
       .setFontColor('#ffffff');
   }
 
-  const props = PropertiesService.getScriptProperties();
-  if (props.getProperty('CLEAN_SLATE_RESET_V32_ALL') !== 'DONE') {
-    resetDatabaseToZero();
-    props.setProperty('CLEAN_SLATE_RESET_V32_ALL', 'DONE');
-  }
+  // Reset automático desativado para proteção perpétua dos dados
 
   cleanPhysicalSheetDuplicates();
   repairAndCleanAtivosSheet(ss);
