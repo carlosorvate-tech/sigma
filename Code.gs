@@ -13,7 +13,8 @@ const SHEET_NAMES = {
   ATIVOS: 'ATIVOS',
   PLANO_PRESCRITIVO: 'PLANO_PRESCRITIVO',
   REGISTRO_OCORRENCIAS: 'REGISTRO_OCORRENCIAS',
-  DASH_CALCULOS: 'DASH_CALCULOS'
+  DASH_CALCULOS: 'DASH_CALCULOS',
+  PRESTADORES_OFICINAS: 'PRESTADORES_OFICINAS'
 };
 
 function doGet(e) {
@@ -124,6 +125,19 @@ function setupSpreadsheet() {
     ];
     sheetPrescritivo.getRange(1, 1, 1, headersPrescritivo.length)
       .setValues([headersPrescritivo])
+      .setFontWeight('bold')
+      .setBackground('#1e293b')
+      .setFontColor('#ffffff');
+  }
+
+  const sheetPrestadores = getOrCreateSheet(ss, SHEET_NAMES.PRESTADORES_OFICINAS);
+  if (sheetPrestadores.getLastRow() === 0) {
+    const headersPrestadores = [
+      'ID', 'NomeFantasia', 'RazaoSocial', 'CNPJ', 'TipoPrestador', 
+      'Especialidade', 'CidadeUF', 'Telefone', 'Email', 'Observacoes', 'DataCadastro'
+    ];
+    sheetPrestadores.getRange(1, 1, 1, headersPrestadores.length)
+      .setValues([headersPrestadores])
       .setFontWeight('bold')
       .setBackground('#1e293b')
       .setFontColor('#ffffff');
@@ -284,10 +298,13 @@ function getInitialData() {
   const rawLogs = parseSheetRows(sheetOcorrencias.getDataRange().getValues());
   const logs = deduplicateLogsAndItems(rawLogs);
 
+  const prestadores = getPrestadoresOficinas();
+
   return {
     vehicles: vehicles,
     prescriptivePlans: prescriptivePlans,
-    logs: logs
+    logs: logs,
+    prestadores: prestadores
   };
 }
 
