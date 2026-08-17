@@ -102,7 +102,7 @@
         <div class="text-xl font-black text-white flex items-center gap-2"><span class="text-cyan-400">σ</span> SIGMA</div>
         <div class="text-xs text-slate-400">Gestão de Manutenções Automotivas</div>
       </div>
-      <button onclick="abrirModalAjudaSIGMA()" class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-xs font-bold transition shadow-sm">
+      <button onclick="abrirModalAjudaSIGMA()" title="Abre o manual completo, arquitetura e guia operacional do sistema" class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-xs font-bold transition shadow-sm">
         <i data-lucide="help-circle" class="w-4 h-4"></i>
         <span>Manual / Ajuda SIGMA</span>
       </button>
@@ -166,7 +166,7 @@
 
         
         
-        <button onclick="abrirModalDiagnostico()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-cyan-400 hover:bg-cyan-500/10 transition">
+        <button onclick="abrirModalDiagnostico()" title="Insira o relato do sintoma para o Gemini cruzar com o histórico e motorização" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-cyan-400 hover:bg-cyan-500/10 transition">
           <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
           <span>Diagnóstico Preliminar IA</span>
         </button>
@@ -288,7 +288,7 @@
 
       <!-- Lado Direito: Widget vertical de telemetria -->
       <div class="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0">
-        <button onclick="abrirModalAjudaSIGMA()" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition">
+        <button onclick="abrirModalAjudaSIGMA()" title="Abre o manual completo, arquitetura e guia operacional do sistema" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition">
           <span>❓</span>
           <span>Manual / Ajuda SIGMA</span>
         </button>
@@ -396,7 +396,7 @@
           </button>
 
           <!-- Botão Primário / Ingestão Multimodal -->
-          <button onclick="openModalIngestaoPlanoPrescritivo()" class="px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow shadow-sky-600/30">
+          <button onclick="openModalIngestaoPlanoPrescritivo()" title="Executa reanálise inteligente preservando os registros manuais do mantenedor" class="px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow shadow-sky-600/30">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
             <span>Recalcular / Ingerir Fontes</span>
           </button>
@@ -695,7 +695,7 @@
 
       <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
         <button type="button" onclick="closeModalIngestaoPlanoPrescritivo()" class="px-3.5 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs">Cancelar</button>
-        <button type="button" onclick="executeMultimodalIngestion()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow flex items-center gap-1.5">
+        <button type="button" onclick="executeMultimodalIngestion()" title="Executa reanálise inteligente preservando os registros manuais do mantenedor" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow flex items-center gap-1.5">
           <i data-lucide="zap" class="w-4 h-4"></i>
           <span>Processar e Aplicar ao Veículo</span>
         </button>
@@ -1104,7 +1104,7 @@
             
             html += `
               <div class="mt-5 pt-4 border-t border-slate-700">
-                <button onclick="solicitarPDFDiagnosticoOficina()" id="btnGerarPdfOficina" class="w-full bg-slate-800 text-white font-bold py-3 px-4 rounded border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition shadow flex items-center justify-center gap-2">
+                <button onclick="solicitarPDFDiagnosticoOficina()" id="btnGerarPdfOficina" title="Gera o laudo técnico para a oficina com isenção jurídica e oportunidades de upsell" class="w-full bg-slate-800 text-white font-bold py-3 px-4 rounded border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition shadow flex items-center justify-center gap-2">
                   <span>📄</span> EXPORTAR ORDEM DE INSPEÇÃO (OFICINA)
                 </button>
               </div>
@@ -3576,7 +3576,7 @@ function deleteMaintenanceLog(logId) {
       <!-- Botão de Ação & Info -->
       <div class="flex items-center justify-between pt-1 flex-wrap gap-2">
         <span class="text-[11px] text-slate-400">Análise causal cruzada com o histórico e motorização do ativo.</span>
-        <button id="btnGerarDiag" onclick="acionarDiagnosticoIA()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-sky-500 hover:from-cyan-500 hover:to-sky-400 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 flex items-center gap-1.5 transition">
+        <button id="btnGerarDiag" onclick="acionarDiagnosticoIA()" title="Insira o relato do sintoma para o Gemini cruzar com o histórico e motorização" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-sky-500 hover:from-cyan-500 hover:to-sky-400 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 flex items-center gap-1.5 transition">
           <i data-lucide="cpu" class="w-4 h-4"></i>
           <span>Processar Diagnóstico IA</span>
         </button>
@@ -3682,21 +3682,58 @@ function deleteMaintenanceLog(logId) {
     </div>
     
     <!-- Corpo com Abas / Conteúdo Rolável -->
-    <div style="padding: 20px; overflow-y: auto; font-size: 10pt; color: #334155; line-height: 1.5;">
+    <div style="padding: 20px; overflow-y: auto; font-size: 9.5pt; color: #334155; line-height: 1.6; max-height: 65vh;">
       
-      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-top: 0;">1. Visão Geral e Proposta de Valor</h4>
-      <p>O SIGMA é um sistema inteligente de gestão de manutenção veicular e triagem B2B. Ele conecta o relato do condutor ao diagnóstico mecânico de alta precisão, gerando oportunidades de receita preventiva (upsell) para oficinas e garantindo a preservação do ativo.</p>
-      
-      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">2. Guia Rápido de Comandos e Telas</h4>
-      <ul style="padding-left: 20px; margin-bottom: 15px;">
-        <li><b>Dashboard Principal:</b> Monitora o odômetro e o Score de Saúde geral do veículo.</li>
-        <li><b>Processar Diagnóstico IA:</b> Insira o relato do sintoma para receber probabilidades causais e roteiros de teste para o elevador.</li>
-        <li><b>Ordem de Investigação (PDF):</b> Emite o documento oficial para a oficina com foco em isenção jurídica e gatilhos de manutenção.</li>
-        <li><b>Recálculo com Merge:</b> Atualiza o plano prescritivo via inteligência artificial respeitando as intervenções manuais registradas pelo mantenedor.</li>
+      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-top: 0;">1. Contexto, Problema e Atores Envolvidos</h4>
+      <p><b>O Problema:</b> Assimetria de informações entre condutores e oficinas mecânicas, ausência de rastreabilidade histórica e perda de receitas preventivas por falta de diagnósticos estruturados.</p>
+      <p><b>Atores do Ecossistema:</b></p>
+      <ul style="margin-top: 0; padding-left: 20px;">
+        <li><b>Condutores / Proprietários:</b> Foco em transparência, segurança e preservação do patrimônio veicular.</li>
+        <li><b>Chefes de Oficina / Reparadores:</b> Foco em diagnósticos rápidos, blindagem jurídica e gatilhos de upsell justificados por quilometragem.</li>
+        <li><b>Gestores de Frota (Pronto para v2.0):</b> Isolamento multi-tenant e auditoria centralizada.</li>
       </ul>
 
-      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">3. Arquitetura e Segurança de Dados</h4>
-      <p>Todos os relatórios emitidos são automaticamente arquivados no Google Drive e indexados cronologicamente na aba <code>HISTORICO_LAUDOS</code> da planilha, garantindo rastreabilidade forense total.</p>
+      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">2. Requisitos Funcionais e Não-Funcionais</h4>
+      <ul style="padding-top: 0; padding-left: 20px;">
+        <li><b>Funcionais:</b> Ingestão em linguagem natural, triagem preditiva via Gemini API, exportação de PDFs em formato prancha ("chão de oficina") e indexação cronológica automática no Drive e Planilhas.</li>
+        <li><b>Não-Funcionais:</b> Fricção zero para o mecânico, segurança de dados em nuvem Google Apps Script e isolamento por chave composta no modo Merge.</li>
+      </ul>
+
+      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">3. Arquitetura e Solução Tecnológica</h4>
+      <p>Desenvolvido em arquitetura híbrida (Google Apps Script no backend + Front-end reativo com gerenciamento de estado em memória e Google Sheets/Drive para persistência imutável).</p>
+
+      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">4. Guia Operacional Tela a Tela (Comandos e Resultados)</h4>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9pt;">
+        <thead>
+          <tr style="background: #f1f5f9; text-align: left;">
+            <th style="border: 1px solid #cbd5e1; padding: 6px;">Comando / Ação</th>
+            <th style="border: 1px solid #cbd5e1; padding: 6px;">Como Acessar</th>
+            <th style="border: 1px solid #cbd5e1; padding: 6px;">Resultado Esperado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;"><b>Processar Diagnóstico</b></td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">Botão de Triagem IA</td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">Abre modal de sintomas para gerar hipóteses causais e roteiro de testes.</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;"><b>Emitir Ordem de Oficina (PDF)</b></td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">Ações de Ativo</td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">Gera PDF com isenção jurídica e itens críticos para upsell imediato.</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;"><b>Recálculo com Merge</b></td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">Módulo Prescritivo</td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">Atualiza o plano via IA preservando as diretrizes manuais do mantenedor.</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;"><b>Repositório Cronológico</b></td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">Background / Planilha</td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">Salva PDF no Drive e indexa metadados na aba <code>HISTORICO_LAUDOS</code>.</td>
+          </tr>
+        </tbody>
+      </table>
 
     </div>
     
