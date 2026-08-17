@@ -1036,8 +1036,17 @@
               });
             }
             
-            // --- CAPTURA ESTRATÉGICA DE UPSELL (MARCO ZERO) ---
-            const plan = window.state.prescriptivePlan || [];
+            // --- CAPTURA ESTRATÉGICA DE UPSELL (MARCO ZERO) CORRIGIDA ---
+            
+            // Captura defensiva da variável de estado (lida com let/const fora do escopo window)
+            let estadoSeguro = {};
+            if (typeof state !== 'undefined') {
+                estadoSeguro = state;
+            } else if (typeof window.state !== 'undefined') {
+                estadoSeguro = window.state;
+            }
+            
+            const plan = estadoSeguro.prescriptivePlan || [];
             const kmText = document.getElementById('vehicleKmDisplay') ? document.getElementById('vehicleKmDisplay').innerText : "0";
             const kmAtual = parseInt(kmText.replace(/[^0-9]/g, '')) || 0;
             const scoreGeral = document.getElementById('scoreValue') ? document.getElementById('scoreValue').innerText : "N/D";
