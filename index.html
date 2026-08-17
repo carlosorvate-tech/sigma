@@ -1036,7 +1036,19 @@
               });
             }
             
+            // [INÍCIO DA INSERÇÃO DO BOTÃO PDF]
+            // Salva o JSON da resposta em uma variável global temporária para o PDF
+            window.ultimoDiagnosticoGerado = { relato: relato, dados: diag };
+            
+            html += `
+              <div class="mt-4 pt-4 border-t border-slate-700">
+                <button onclick="solicitarPDFDiagnostico()" id="btnGerarPdfDiag" class="w-full bg-slate-700 text-white font-bold py-3 rounded border border-slate-600 hover:bg-slate-600 hover:border-slate-500 transition shadow flex items-center justify-center gap-2">
+                  <span>📄</span> Exportar PDF para Oficina
+                </button>
+              </div>
+            `;
             document.getElementById('diagResultados').innerHTML = html;
+            // [FIM DA INSERÇÃO DO BOTÃO PDF]
             document.getElementById('diagResultados').classList.remove('hidden');
           } catch(e) {
             alert("Erro ao processar retorno da IA. Detalhes no console.");
@@ -1062,7 +1074,16 @@
               }
             ]
           };
-          document.getElementById('diagResultados').innerHTML = `<div class="p-3 bg-slate-900 border-l-4 border-amber-500 rounded-xl text-xs text-slate-200"><strong>Resumo:</strong> ${diag.resumoExecutivo}</div>`;
+          window.ultimoDiagnosticoGerado = { relato: relato, dados: diag };
+          let fHtml = `<div class="p-3 bg-slate-900 border-l-4 border-amber-500 rounded-xl text-xs text-slate-200"><strong>Resumo:</strong> ${diag.resumoExecutivo}</div>`;
+          fHtml += `
+            <div class="mt-4 pt-4 border-t border-slate-700">
+              <button onclick="solicitarPDFDiagnostico()" id="btnGerarPdfDiag" class="w-full bg-slate-700 text-white font-bold py-3 rounded border border-slate-600 hover:bg-slate-600 hover:border-slate-500 transition shadow flex items-center justify-center gap-2">
+                <span>📄</span> Exportar PDF para Oficina
+              </button>
+            </div>
+          `;
+          document.getElementById('diagResultados').innerHTML = fHtml;
           document.getElementById('diagResultados').classList.remove('hidden');
         }, 1000);
       }
@@ -3094,6 +3115,200 @@ function deleteMaintenanceLog(logId) {
 
     function recalculatePlan() {
       openModalIngestaoPlanoPrescritivo();
+    }
+
+    
+    function solicitarPDFDiagnostico() {
+      const diagData = window.ultimoDiagnosticoGerado;
+      if (!diagData || !diagData.dados) {
+        alert('Nenhum diagnóstico disponível para emissão do laudo.');
+        return;
+      }
+
+      const v = getSelectedVehicle();
+      const diag = diagData.dados;
+      const relato = diagData.relato;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 12;
+      const printWidth = pageWidth - (margin * 2);
+
+      let y = 14;
+
+      function checkNewPage(neededHeight) {
+        if (y + neededHeight > pageHeight - 20) {
+          doc.addPage();
+          y = 16;
+          drawPageHeader();
+        }
+      }
+
+      function drawPageHeader() {
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, pageWidth, 12, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text(`SIGMA — LAUDO DE TRIAGEM & DIAGNÓSTICO PRELIMINAR (IA)`, margin, 8);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth - margin, 8, { align: 'right' });
+      }
+
+      drawPageHeader();
+      y = 18;
+
+      // Card do Veículo
+      doc.setFillColor(30, 41, 59);
+      doc.roundedRect(margin, y, printWidth, 24, 2, 2, 'F');
+      
+      doc.setTextColor(56, 189, 248);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(`${v?.Marca || 'CITROËN'} ${v?.Modelo || 'C4 PALLAS'} (${v?.AnoFabricacao || 2009}/${v?.AnoModelo || 2009})`, margin + 4, y + 7);
+
+      doc.setTextColor(226, 232, 240);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(`Placa: ${v?.PlacaChassi || v?.Placa || 'EEQ-9C28'}   |   Motor: ${v?.Motorizacao || '2.0 16V EW10A'}   |   KM Base: ${Number(v?.KMAtual || 191706).toLocaleString('pt-BR')} KM`, margin + 4, y + 14);
+
+      doc.setTextColor(245, 158, 11);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text(`TRANSMISSÃO: ${v?.TipoTransmissao || 'Automático (AL4)'}   |   FINALIDADE: TRIAGEM PRÉVIA PARA BOX MECÂNICO`, margin + 4, y + 20);
+
+      y += 29;
+
+      // Relato do Usuário
+      doc.setFillColor(241, 245, 249);
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(margin, y, printWidth, 18, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      doc.text('SINTOMA REPORTADO PELO CONDUTOR:', margin + 4, y + 5);
+
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(7.5);
+      doc.setTextColor(51, 65, 85);
+      const relatoLines = doc.splitTextToSize(`"${relato}"`, printWidth - 8);
+      doc.text(relatoLines, margin + 4, y + 10);
+
+      y += 23;
+
+      // Resumo Executivo da IA
+      checkNewPage(24);
+      doc.setFillColor(254, 243, 199);
+      doc.setDrawColor(245, 158, 11);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, y, printWidth, 22, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(180, 83, 9);
+      doc.text('PARECER EXECUTIVO PRELIMINAR (IA / HEURÍSTICA):', margin + 4, y + 5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(15, 23, 42);
+      const resumoLines = doc.splitTextToSize(diag.resumoExecutivo || '', printWidth - 8);
+      doc.text(resumoLines, margin + 4, y + 10);
+
+      y += 27;
+
+      // Hipóteses de Bancada e Testes
+      if (diag.arvoreCausas && diag.arvoreCausas.length > 0) {
+        doc.setFillColor(14, 165, 233);
+        doc.rect(margin, y, 3.5, 6, 'F');
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.text('HIPÓTESES CAUSAIS & PROCEDIMENTOS DE TESTE NO BOX', margin + 6, y + 4.8);
+        y += 9;
+
+        diag.arvoreCausas.forEach((c, idx) => {
+          doc.setFillColor(248, 250, 252);
+          doc.setDrawColor(226, 232, 240);
+          doc.setLineWidth(0.4);
+          
+          const procLines = doc.splitTextToSize(c.procedimentoTeste || '', printWidth - 12);
+          const causaLines = doc.splitTextToSize(c.causaRaizProvavel || '', printWidth - 28);
+          const blockH = Math.max(26, procLines.length * 3.8 + causaLines.length * 3.8 + 14);
+          
+          checkNewPage(blockH + 2);
+          doc.roundedRect(margin, y, printWidth, blockH, 2, 2, 'FD');
+
+          // Header da causa
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(2, 132, 199);
+          doc.text(`${idx + 1}. ${c.componenteSuspeito}`, margin + 4, y + 5.5);
+
+          doc.setFillColor(224, 242, 254);
+          doc.roundedRect(pageWidth - margin - 32, y + 1.5, 28, 5.5, 1, 1, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(3, 105, 161);
+          doc.text(`${c.probabilidadePercentual}% de chance`, pageWidth - margin - 18, y + 5.2, { align: 'center' });
+
+          // Causa Raiz
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(15, 23, 42);
+          doc.text('Causa Raiz:', margin + 4, y + 11);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(causaLines, margin + 22, y + 11);
+
+          // Teste Físico
+          const testeY = y + 11 + Math.max(4.5, causaLines.length * 3.8);
+          doc.setFillColor(240, 253, 244);
+          doc.roundedRect(margin + 3, testeY - 1, printWidth - 6, blockH - (testeY - y) - 2, 1, 1, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7);
+          doc.setTextColor(22, 101, 52);
+          doc.text('🛠️ Teste Físico Sugerido no Box:', margin + 6, testeY + 3);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(51, 65, 85);
+          doc.text(procLines, margin + 6, testeY + 7.5);
+
+          y += blockH + 3.5;
+        });
+      }
+
+      // Rodapé Institucional
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFillColor(248, 250, 252);
+        doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+        
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.4);
+        doc.line(0, pageHeight - 15, pageWidth, pageHeight - 15);
+
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.text('DECLARAÇÃO DOS 3 PILARES SIGMA:', margin, pageHeight - 9.5);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.8);
+        doc.setTextColor(2, 132, 199);
+        doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 9.5, { align: 'right' });
+
+        doc.setTextColor(100, 116, 139);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.2);
+        doc.text('1. PRESERVAÇÃO DO ATIVO VEICULAR   •   2. PREVENÇÃO CONTRA FALHAS GRAVES E DESTRUTIVAS   •   3. AUDITORIA FINANCEIRA E HISTÓRICO CAUSAL', margin, pageHeight - 5);
+      }
+
+      doc.save(`SIGMA_Laudo_Triagem_${v?.PlacaChassi || v?.Placa || 'EEQ-9C28'}_${new Date().toISOString().split('T')[0]}.pdf`);
     }
 
     function exportPdfDossier() {
