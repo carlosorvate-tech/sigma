@@ -19,9 +19,13 @@ const SHEET_NAMES = {
 function doGet(e) {
   let template;
   try {
-    template = HtmlService.createTemplateFromFile('index');
-  } catch(err) {
-    template = HtmlService.createTemplateFromFile('Index');
+    template = HtmlService.createTemplateFromFile('App');
+  } catch(err1) {
+    try {
+      template = HtmlService.createTemplateFromFile('Index');
+    } catch(err2) {
+      template = HtmlService.createTemplateFromFile('index');
+    }
   }
   return template.evaluate()
       .setTitle('SIGMA - Gestão Inteligente de Manutenções Automotivas')
