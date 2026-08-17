@@ -97,9 +97,15 @@
   <!-- 2. DESKTOP SIDEBAR FIXA (EXIBIDA EM TELAS >= md)                  -->
   <!-- ================================================================= -->
   <aside class="hidden md:flex flex-col w-72 bg-slate-900/95 border-r border-slate-800 h-screen sticky top-0 shrink-0 z-30 overflow-y-auto">
-    <div class="p-5 border-b border-slate-800">
-      <div class="text-xl font-black text-white flex items-center gap-2"><span class="text-cyan-400">σ</span> SIGMA</div>
-      <div class="text-xs text-slate-400">Gestão de Manutenções Automotivas</div>
+    <div class="p-4 border-b border-slate-800 space-y-2.5">
+      <div>
+        <div class="text-xl font-black text-white flex items-center gap-2"><span class="text-cyan-400">σ</span> SIGMA</div>
+        <div class="text-xs text-slate-400">Gestão de Manutenções Automotivas</div>
+      </div>
+      <button onclick="abrirModalAjudaSIGMA()" class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-xs font-bold transition shadow-sm">
+        <i data-lucide="help-circle" class="w-4 h-4"></i>
+        <span>Manual / Ajuda SIGMA</span>
+      </button>
     </div>
 
     <!-- DIVISOR MENU PRINCIPAL -->
@@ -158,10 +164,7 @@
           <span>Emitir Dossiê PDF</span>
         </button>
 
-        <button onclick="abrirModalAjudaSIGMA()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-sky-400 hover:bg-sky-500/10 transition">
-          <i data-lucide="help-circle" class="w-4 h-4"></i>
-          <span>Manual / Ajuda SIGMA</span>
-        </button>
+        
         
         <button onclick="abrirModalDiagnostico()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-cyan-400 hover:bg-cyan-500/10 transition">
           <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
@@ -187,15 +190,21 @@
 
     <div class="drawer-content relative w-4/5 max-w-xs bg-slate-900 h-full p-5 flex flex-col justify-between border-r border-slate-800 z-10 overflow-y-auto">
       <div>
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center">
-              <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+        <div class="border-b border-slate-800 pb-3 mb-3 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center">
+                <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+              </div>
+              <span class="font-extrabold text-lg text-white">SIGMA</span>
             </div>
-            <span class="font-extrabold text-lg text-white">SIGMA</span>
+            <button onclick="closeMobileDrawer()" class="p-1 rounded bg-slate-800 text-slate-400 hover:text-white">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
           </div>
-          <button onclick="closeMobileDrawer()" class="p-1 rounded bg-slate-800 text-slate-400 hover:text-white">
-            <i data-lucide="x" class="w-5 h-5"></i>
+          <button onclick="abrirModalAjudaSIGMA(); closeMobileDrawer();" class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-xs font-bold transition">
+            <i data-lucide="help-circle" class="w-4 h-4"></i>
+            <span>Manual / Ajuda SIGMA</span>
           </button>
         </div>
 
@@ -246,10 +255,7 @@
               <span>Emitir Dossiê PDF</span>
             </button>
 
-            <button onclick="abrirModalAjudaSIGMA(); closeMobileDrawer();" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-sky-400 hover:bg-sky-500/10">
-              <i data-lucide="help-circle" class="w-4 h-4"></i>
-              <span>Manual / Ajuda SIGMA</span>
-            </button>
+            
             
             <button onclick="abrirModalDiagnostico(); closeMobileDrawer();" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-cyan-400 hover:bg-cyan-500/10">
               <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
