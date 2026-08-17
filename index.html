@@ -158,6 +158,11 @@
           <span>Emitir Dossiê PDF</span>
         </button>
 
+        <button onclick="abrirModalAjudaSIGMA()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-sky-400 hover:bg-sky-500/10 transition">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
+          <span>Manual / Ajuda SIGMA</span>
+        </button>
+        
         <button onclick="abrirModalDiagnostico()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-cyan-400 hover:bg-cyan-500/10 transition">
           <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
           <span>Diagnóstico Preliminar IA</span>
@@ -241,6 +246,11 @@
               <span>Emitir Dossiê PDF</span>
             </button>
 
+            <button onclick="abrirModalAjudaSIGMA(); closeMobileDrawer();" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-sky-400 hover:bg-sky-500/10">
+              <i data-lucide="help-circle" class="w-4 h-4"></i>
+              <span>Manual / Ajuda SIGMA</span>
+            </button>
+            
             <button onclick="abrirModalDiagnostico(); closeMobileDrawer();" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-cyan-400 hover:bg-cyan-500/10">
               <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
               <span>Diagnóstico Preliminar IA</span>
@@ -272,6 +282,10 @@
 
       <!-- Lado Direito: Widget vertical de telemetria -->
       <div class="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0">
+        <button onclick="abrirModalAjudaSIGMA()" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition">
+          <span>❓</span>
+          <span>Manual / Ajuda SIGMA</span>
+        </button>
         <div class="px-3 py-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs font-bold text-emerald-400 flex items-center gap-1.5 shadow-sm">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>MOTOR ATIVO</span>
@@ -3649,6 +3663,55 @@ function deleteMaintenanceLog(logId) {
       </div>
     </div>
   </div>
+
+
+<!-- Estrutura do Modal de Ajuda -->
+<div id="modalAjudaSigma" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
+  <div style="background: white; width: 85%; max-width: 900px; max-height: 85vh; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+    
+    <!-- Cabeçalho do Modal -->
+    <div style="background: #0f172a; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 14pt;">📖 SIGMA CMMS v1.0 — Manual de Uso e Governança</h3>
+      <button onclick="fecharModalAjudaSIGMA()" style="background: transparent; color: white; border: none; font-size: 14pt; cursor: pointer;">✕</button>
+    </div>
+    
+    <!-- Corpo com Abas / Conteúdo Rolável -->
+    <div style="padding: 20px; overflow-y: auto; font-size: 10pt; color: #334155; line-height: 1.5;">
+      
+      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-top: 0;">1. Visão Geral e Proposta de Valor</h4>
+      <p>O SIGMA é um sistema inteligente de gestão de manutenção veicular e triagem B2B. Ele conecta o relato do condutor ao diagnóstico mecânico de alta precisão, gerando oportunidades de receita preventiva (upsell) para oficinas e garantindo a preservação do ativo.</p>
+      
+      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">2. Guia Rápido de Comandos e Telas</h4>
+      <ul style="padding-left: 20px; margin-bottom: 15px;">
+        <li><b>Dashboard Principal:</b> Monitora o odômetro e o Score de Saúde geral do veículo.</li>
+        <li><b>Processar Diagnóstico IA:</b> Insira o relato do sintoma para receber probabilidades causais e roteiros de teste para o elevador.</li>
+        <li><b>Ordem de Investigação (PDF):</b> Emite o documento oficial para a oficina com foco em isenção jurídica e gatilhos de manutenção.</li>
+        <li><b>Recálculo com Merge:</b> Atualiza o plano prescritivo via inteligência artificial respeitando as intervenções manuais registradas pelo mantenedor.</li>
+      </ul>
+
+      <h4 style="color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">3. Arquitetura e Segurança de Dados</h4>
+      <p>Todos os relatórios emitidos são automaticamente arquivados no Google Drive e indexados cronologicamente na aba <code>HISTORICO_LAUDOS</code> da planilha, garantindo rastreabilidade forense total.</p>
+
+    </div>
+    
+    <!-- Rodapé do Modal -->
+    <div style="background: #f8fafc; padding: 12px 20px; text-align: right; border-top: 1px solid #e2e8f0;">
+      <button onclick="fecharModalAjudaSIGMA()" style="background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Fechar Manual</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function abrirModalAjudaSIGMA() {
+    const modal = document.getElementById('modalAjudaSigma');
+    if (modal) modal.style.display = 'flex';
+  }
+  function fecharModalAjudaSIGMA() {
+    const modal = document.getElementById('modalAjudaSigma');
+    if (modal) modal.style.display = 'none';
+  }
+</script>
 
 </body>
 </html>
