@@ -13,21 +13,11 @@ const SHEET_NAMES = {
   ATIVOS: 'ATIVOS',
   PLANO_PRESCRITIVO: 'PLANO_PRESCRITIVO',
   REGISTRO_OCORRENCIAS: 'REGISTRO_OCORRENCIAS',
-  DASH_CALCULOS: 'DASH_CALCULOS',
-  PRESTADORES_OFICINAS: 'PRESTADORES_OFICINAS'
+  DASH_CALCULOS: 'DASH_CALCULOS'
 };
 
 function doGet(e) {
-  let template;
-  try {
-    template = HtmlService.createTemplateFromFile('App');
-  } catch(err1) {
-    try {
-      template = HtmlService.createTemplateFromFile('Index');
-    } catch(err2) {
-      template = HtmlService.createTemplateFromFile('index');
-    }
-  }
+  const template = HtmlService.createTemplateFromFile('Index');
   return template.evaluate()
       .setTitle('SIGMA - Gestão Inteligente de Manutenções Automotivas')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
@@ -130,19 +120,6 @@ function setupSpreadsheet() {
       .setFontColor('#ffffff');
   }
 
-  const sheetPrestadores = getOrCreateSheet(ss, SHEET_NAMES.PRESTADORES_OFICINAS);
-  if (sheetPrestadores.getLastRow() === 0) {
-    const headersPrestadores = [
-      'ID', 'NomeFantasia', 'RazaoSocial', 'CNPJ', 'TipoPrestador', 
-      'Especialidade', 'CidadeUF', 'Telefone', 'Email', 'Observacoes', 'DataCadastro'
-    ];
-    sheetPrestadores.getRange(1, 1, 1, headersPrestadores.length)
-      .setValues([headersPrestadores])
-      .setFontWeight('bold')
-      .setBackground('#1e293b')
-      .setFontColor('#ffffff');
-  }
-
   const sheetOcorrencias = getOrCreateSheet(ss, SHEET_NAMES.REGISTRO_OCORRENCIAS);
   if (sheetOcorrencias.getLastRow() === 0) {
     const headersOcorrencias = [
@@ -157,7 +134,11 @@ function setupSpreadsheet() {
       .setFontColor('#ffffff');
   }
 
-  // Reset automático desativado para proteção perpétua dos dados
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('CLEAN_SLATE_RESET_V32_ALL') !== 'DONE') {
+    resetDatabaseToZero();
+    props.setProperty('CLEAN_SLATE_RESET_V32_ALL', 'DONE');
+  }
 
   cleanPhysicalSheetDuplicates();
   repairAndCleanAtivosSheet(ss);
@@ -294,13 +275,10 @@ function getInitialData() {
   const rawLogs = parseSheetRows(sheetOcorrencias.getDataRange().getValues());
   const logs = deduplicateLogsAndItems(rawLogs);
 
-  const prestadores = getPrestadoresOficinas();
-
   return {
     vehicles: vehicles,
     prescriptivePlans: prescriptivePlans,
-    logs: logs,
-    prestadores: prestadores
+    logs: logs
   };
 }
 
