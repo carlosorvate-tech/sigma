@@ -741,44 +741,27 @@ function updateVehicle(vehicle) {
   const ss = getSpreadsheet();
   const sheet = getOrCreateSheet(ss, SHEET_NAMES.ATIVOS);
   const data = sheet.getDataRange().getValues();
-  const vId = String(vehicle.id || vehicle.ID);
-
-  const marca = String(vehicle.marca || vehicle.Marca || '').trim().toUpperCase();
-  const modelo = String(vehicle.modelo || vehicle.Modelo || '').trim().toUpperCase();
-  const anoFab = Number(vehicle.anoFabricacao || vehicle.AnoFabricacao || 2009);
-  const anoMod = Number(vehicle.anoModelo || vehicle.AnoModelo || 2009);
-  const motor = String(vehicle.motorizacao || vehicle.Motorizacao || '').trim();
-  const comb = String(vehicle.combustivel || vehicle.Combustivel || 'FLEX').trim();
-  const placa = String(vehicle.placaChassi || vehicle.PlacaChassi || vehicle.placa || vehicle.Placa || '').trim().toUpperCase();
-  const dataAprop = String(vehicle.dataApropriacao || vehicle.DataApropriacao || '').trim();
-  const kmIni = Number(vehicle.kmInicial || vehicle.KMInicial || 0);
-  const kmAt = Number(vehicle.kmAtual || vehicle.KMAtual || 0);
-  const regime = String(vehicle.regimeUso || vehicle.RegimeUso || 'SEVERO_URBANO').trim();
-  const trans = String(vehicle.tipoTransmissao || vehicle.TipoTransmissao || 'Automático Convencional').trim();
-  const dist = String(vehicle.tipoDistribuicao || vehicle.TipoDistribuicao || 'Correia Dentada').trim();
-  const now = new Date().toISOString().split('T')[0];
+  const vId = vehicle.id || vehicle.ID;
 
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === vId) {
-      sheet.getRange(i + 1, 2).setValue(marca || data[i][1]);
-      sheet.getRange(i + 1, 3).setValue(modelo || data[i][2]);
-      sheet.getRange(i + 1, 4).setValue(anoFab || data[i][3]);
-      sheet.getRange(i + 1, 5).setValue(anoMod || data[i][4]);
-      sheet.getRange(i + 1, 6).setValue(motor || data[i][5]);
-      sheet.getRange(i + 1, 7).setValue(comb || data[i][6]);
-      sheet.getRange(i + 1, 8).setValue(placa || data[i][7]);
-      sheet.getRange(i + 1, 9).setValue(dataAprop || data[i][8]);
-      sheet.getRange(i + 1, 10).setValue(kmIni || data[i][9]);
-      sheet.getRange(i + 1, 11).setValue(kmAt || data[i][10]);
-      sheet.getRange(i + 1, 12).setValue(now);
-      sheet.getRange(i + 1, 13).setValue(regime || data[i][12]);
-      sheet.getRange(i + 1, 14).setValue(trans || data[i][13]);
-      sheet.getRange(i + 1, 15).setValue(dist || data[i][14]);
-      
-      return { success: true, vehicleId: vId };
+    if (String(data[i][0]) === String(vId)) {
+      sheet.getRange(i + 1, 2).setValue(vehicle.marca || data[i][1]);
+      sheet.getRange(i + 1, 3).setValue(vehicle.modelo || data[i][2]);
+      sheet.getRange(i + 1, 4).setValue(vehicle.anoFabricacao || data[i][3]);
+      sheet.getRange(i + 1, 5).setValue(vehicle.anoModelo || data[i][4]);
+      sheet.getRange(i + 1, 6).setValue(vehicle.motorizacao || data[i][5]);
+      sheet.getRange(i + 1, 7).setValue(vehicle.combustivel || data[i][6]);
+      sheet.getRange(i + 1, 8).setValue(vehicle.placaChassi || vehicle.placa || data[i][7]);
+      sheet.getRange(i + 1, 10).setValue(Number(vehicle.kmInicial) || data[i][9]);
+      sheet.getRange(i + 1, 11).setValue(Number(vehicle.kmAtual) || data[i][10]);
+      sheet.getRange(i + 1, 12).setValue(new Date().toISOString().split('T')[0]);
+      sheet.getRange(i + 1, 13).setValue(vehicle.regimeUso || data[i][12]);
+      sheet.getRange(i + 1, 14).setValue(vehicle.tipoTransmissao || data[i][13]);
+      sheet.getRange(i + 1, 15).setValue(vehicle.tipoDistribuicao || vehicle.TipoDistribuicao || data[i][14] || 'Correia Dentada');
+      return { success: true, message: 'Veículo atualizado com sucesso.' };
     }
   }
-  return { success: false, message: 'Veículo não encontrado para atualização.' };
+  return { success: false, message: 'Veículo não encontrado.' };
 }
 function deleteVehicle(vehicleId) {
   const ss = getSpreadsheet();
@@ -1481,4 +1464,107 @@ function arquivarLaudoNoRepositorio(placaVeiculo, tipoRelatorio, resumoSintoma, 
     // Retorna falha silenciosa para não travar o fluxo principal do usuário
     return { status: "erro", mensagem: e.message };
   }
+}
+
+
+/**
+ * CONSULTA INTELIGENTE DE FICHA TÉCNICA VIA GEMINI IA (OU FALLBACK HEURÍSTICO)
+ */
+function consultarFichaTecnicaVeiculoIA(marca, modelo, ano) {
+  try {
+    const apiKey = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || DEFAULT_GEMINI_KEY || '';
+    const cleanMarca = String(marca || '').trim();
+    const cleanModelo = String(modelo || '').trim();
+    const cleanAno = String(ano || '2020').trim();
+
+    if (!cleanMarca || !cleanModelo) {
+      return { success: false, message: 'Informe a marca e o modelo do veículo para consulta.' };
+    }
+
+    if (apiKey) {
+      const prompt = "Você é o Engenheiro Especialista Chefe em Fichas Técnicas Automotivas OEM do SIGMA CMMS.\n" +
+        "Identifique com máxima precisão técnica de montadora os dados do seguinte veículo:\n" +
+        "- Marca: " + cleanMarca + "\n" +
+        "- Modelo: " + cleanModelo + "\n" +
+        "- Ano de Fabricação/Modelo: " + cleanAno + "\n\n" +
+        "Retorne ESTRITAMENTE um objeto JSON válido (sem blocos markdown) com o seguinte formato:\n" +
+        "{\n" +
+        '  "motorizacao": "Ex: 2.0 16V EW10A (ou código OEM exato)",\n' +
+        '  "combustivel": "FLEX | GASOLINA | DIESEL | ELETRICO | HIBRIDO",\n' +
+        '  "transmissao": "Automático | Manual | CVT | Automatizado | Dupla Embreagem",\n' +
+        '  "tipoDistribuicao": "Correia Dentada | Corrente de Distribuição | Correia Banhada a Óleo | Engrenagens | 100% Elétrico",\n' +
+        '  "capacidadeOleo": "Ex: 4.25L 10W40",\n' +
+        '  "observacaoTecnica": "Ex: Sincronismo do motor acionado por correia dentada com intervalo de substituição estrito."\n' +
+        "}";
+
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+      const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: "application/json"
+        }
+      };
+
+      const options = {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+
+      const res = UrlFetchApp.fetch(url, options);
+      if (res.getResponseCode() === 200) {
+        const jsonRes = JSON.parse(res.getContentText());
+        const rawText = jsonRes.candidates[0].content.parts[0].text;
+        const cleanJson = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+        const parsed = JSON.parse(cleanJson);
+        return { success: true, data: parsed, fonte: 'GEMINI_AI' };
+      }
+    }
+  } catch (err) {
+    Logger.log('Aviso ao consultar Gemini para ficha técnica: ' + err.toString());
+  }
+
+  // Fallback heurístico de engenharia automotiva
+  const mUpper = (String(modelo) + ' ' + String(marca)).toUpperCase();
+  let motor = '1.6 16V';
+  let dist = 'Correia Dentada';
+  let trans = 'Manual';
+  let comb = 'FLEX';
+
+  if (mUpper.includes('C4') || mUpper.includes('PALLAS') || mUpper.includes('PICASSO') || mUpper.includes('307') || mUpper.includes('308') || mUpper.includes('408')) {
+    motor = '2.0 16V EW10A';
+    dist = 'Correia Dentada';
+    trans = 'Automático';
+    comb = 'FLEX';
+  } else if (mUpper.includes('COROLLA') || mUpper.includes('CIVIC') || mUpper.includes('ETIOS') || mUpper.includes('YARIS')) {
+    motor = '2.0 16V Dual VVT-i';
+    dist = 'Corrente de Distribuição';
+    trans = 'CVT';
+    comb = 'FLEX';
+  } else if (mUpper.includes('ONIX') || mUpper.includes('TRACKER') || mUpper.includes('MONTANA')) {
+    motor = '1.0 Turbo CSS Prime';
+    dist = 'Correia Banhada a Óleo';
+    trans = 'Automático';
+    comb = 'FLEX';
+  } else if (mUpper.includes('DOLPHIN') || mUpper.includes('SEAL') || mUpper.includes('LEAF') || mUpper.includes('VOLVO EX30')) {
+    motor = 'Motor Elétrico Síncrono';
+    dist = '100% Elétrico';
+    trans = 'Automático';
+    comb = 'ELETRICO';
+  }
+
+  return {
+    success: true,
+    data: {
+      motorizacao: motor,
+      combustivel: comb,
+      transmissao: trans,
+      tipoDistribuicao: dist,
+      capacidadeOleo: '4.0L',
+      observacaoTecnica: 'Ficha técnica identificada pela base determinística de engenharia.'
+    },
+    fonte: 'HEURISTICA_AUTOMOTIVA'
+  };
 }

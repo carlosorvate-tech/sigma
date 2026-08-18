@@ -2010,7 +2010,9 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       const vModelo = v.Modelo || v.modelo || '';
       const vPlaca = v.PlacaChassi || v.placaChassi || v.Placa || v.placa || '---';
       const vComb = v.Combustivel || v.combustivel || 'FLEX';
-      const vTrans = v.TipoTransmissao || v.tipoTransmissao || 'Automático Convencional';
+      let vTrans = v.TipoTransmissao || v.tipoTransmissao || 'Automático';
+      vTrans = vTrans.replace(/\s*\(Torque AL4\)|\s*\(AL4\)|\s*Convencional/gi, '').trim();
+      if (!vTrans) vTrans = 'Automático';
       const vRegime = v.RegimeUso || v.regimeUso || 'SEVERO_URBANO';
       const vDist = v.TipoDistribuicao || v.tipoDistribuicao || 'Correia Dentada';
       const vAnoFab = v.AnoFabricacao || v.anoFabricacao || 2009;
@@ -2022,7 +2024,15 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       document.getElementById('vehicleCombustivel').innerText = vComb;
       document.getElementById('vehicleTransmissao').innerText = vTrans;
       document.getElementById('vehicleRegimeBadge').innerText = vRegime;
-      document.getElementById('vehicleSub').innerText = `Ano ${vAnoFab}/${vAnoMod} • ${vDist}`;
+      const vMotor = v.Motorizacao || v.motorizacao || '';
+      let subTexto = `Ano ${vAnoFab}/${vAnoMod}`;
+      if (vMotor) {
+        subTexto += ` • Motor ${vMotor}`;
+        if (vDist) {
+          subTexto += ` (${vDist})`;
+        }
+      }
+      document.getElementById('vehicleSub').innerText = subTexto;
       document.getElementById('vehicleKmText').innerText = `${Number(vKm).toLocaleString('pt-BR')} KM`;
 
       const vehicleLogs = state.logs.filter(l => String(l.VeiculoID) === String(v.ID || v.id));
@@ -2705,6 +2715,73 @@ function renderLogsTable() {
       lucide.createIcons();
     }
 
+    
+    function consultarFichaTecnicaComIA() {
+      const marca = document.getElementById('vMarca').value.trim();
+      const modelo = document.getElementById('vModelo').value.trim();
+      const ano = document.getElementById('vAnoFab').value.trim() || document.getElementById('vAnoMod').value.trim();
+
+      if (!marca || !modelo) {
+        alert('Por favor, informe ao menos a Marca e o Modelo para que a IA possa pesquisar a ficha técnica.');
+        return;
+      }
+
+      const btn = document.getElementById('btnAutoLookupIA');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Consultando IA...</span>';
+      btn.disabled = true;
+
+      function aplicarDados(data) {
+        if (data.motorizacao) document.getElementById('vMotor').value = data.motorizacao;
+        if (data.combustivel) document.getElementById('vCombustivel').value = data.combustivel;
+        if (data.transmissao) {
+          let t = data.transmissao;
+          if (t.includes('Automático') || t.includes('AL4')) t = 'Automático';
+          document.getElementById('vTransmissao').value = t;
+        }
+        if (data.tipoDistribuicao) {
+          document.getElementById('vDistribuicao').value = data.tipoDistribuicao;
+        }
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        lucide.createIcons();
+        if (typeof showToast === 'function') {
+          showToast('✨ Ficha técnica sugerida pela IA aplicada com sucesso!');
+        } else {
+          alert('✨ Ficha técnica sugerida pela IA aplicada com sucesso!');
+        }
+      }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success && res.data) {
+              aplicarDados(res.data);
+            } else {
+              btn.innerHTML = originalText;
+              btn.disabled = false;
+              alert('Não foi possível identificar a ficha técnica completa via IA.');
+            }
+          })
+          .withFailureHandler(function(err) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            console.error('Erro na consulta IA:', err);
+          })
+          .consultarFichaTecnicaVeiculoIA(marca, modelo, ano);
+      } else {
+        // Mock rápido para ambiente cliente
+        setTimeout(() => {
+          aplicarDados({
+            motorizacao: '2.0 16V EW10A',
+            combustivel: 'FLEX',
+            transmissao: 'Automático',
+            tipoDistribuicao: 'Correia Dentada'
+          });
+        }, 600);
+      }
+    }
+
     function openEditVehicleModal() {
       const v = getSelectedVehicle();
       if (!v) {
@@ -2724,7 +2801,10 @@ function renderLogsTable() {
       document.getElementById('vPlaca').value = v.PlacaChassi || v.Placa || '';
       document.getElementById('vMotor').value = v.Motorizacao || '';
       document.getElementById('vCombustivel').value = v.Combustivel || 'FLEX';
-      document.getElementById('vTransmissao').value = v.TipoTransmissao || 'Automático Convencional (Torque AL4)';
+      let vTransVal = v.TipoTransmissao || v.tipoTransmissao || 'Automático';
+      if (vTransVal.includes('Automático') || vTransVal.includes('AL4')) vTransVal = 'Automático';
+      document.getElementById('vTransmissao').value = vTransVal;
+      document.getElementById('vDistribuicao').value = v.TipoDistribuicao || v.tipoDistribuicao || 'Correia Dentada';
       document.getElementById('vRegimeUso').value = v.RegimeUso || 'SEVERO_URBANO';
       document.getElementById('vKmInicial').value = v.KMInicial || 0;
       document.getElementById('vKmAtual').value = v.KMAtual || 0;
