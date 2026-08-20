@@ -1681,9 +1681,18 @@ function getOficinas() {
       "Tipo_Atendimento", "Mecanico_Responsavel", "Flag_Oficina_Base"
     ]);
     aba.appendRow([
-      "OFI_001", "Auto Mecânica República", "Auto Mecânica República LTDA", "00.000.000/0001-00",
-      "Rua da República, Centro - São Paulo, SP", "5511987654321", "(11) 98765-4321", "(11) 3255-0000", "contato@automecanicarepublica.com.br",
-      "Mecânica Especializada PSA, Injeção e Câmbio", "Responsável Técnico", "TRUE"
+      "OFI_001", 
+      "AUTO MECANICA REPUBLICA", 
+      "BRICHI E MARTINI AUTO MECANICA LTDA-ME", 
+      "15.821.397/0001-50",
+      "AV REPUBLICA, 2280 - PALMITAL - Marília, SP", 
+      "5514996810031", 
+      "(14) 99681-0031", 
+      "(14) 3413-8811", 
+      "contato@automecanicarepublica.com.br",
+      "Mecânica Geral, Retífica de Motores e Injeção", 
+      "Tiago (Mecânico Responsável)", 
+      "TRUE"
     ]);
     aba.appendRow([
       "OFI_002", "FLORIPA CASA E CONSTRUCAO LTDA", "Floripa Casa e Construção LTDA", "59.997.717/0001-00",
