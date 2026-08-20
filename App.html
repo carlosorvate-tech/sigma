@@ -976,6 +976,36 @@
   <!-- SCRIPT DE LÓGICA DO SISTEMA -->
   <script>
     let state = {
+      oficinas: [
+        {
+          id: "OFI_001", ID_Oficina: "OFI_001",
+          nomeFantasia: "Oficina Mecânica Precision Auto", Nome_Fantasia: "Oficina Mecânica Precision Auto",
+          nomeJuridico: "Precision Manutenções Automotivas LTDA", Nome_Juridico: "Precision Manutenções Automotivas LTDA",
+          cnpjh: "12.345.678/0001-90", CNPJ: "12.345.678/0001-90",
+          endereco: "Av. Principal, 1500 - São Paulo, SP", Endereco: "Av. Principal, 1500 - São Paulo, SP",
+          contatoMensagens: "5511987654321", Contato_Mensagens: "5511987654321",
+          contatoCelular: "(11) 98765-4321", Contato_Celular: "(11) 98765-4321",
+          telefoneFisico: "(11) 3456-7890", Telefone_Fisico: "(11) 3456-7890",
+          emails: "contato@precisionauto.com.br", Emails: "contato@precisionauto.com.br",
+          tipoAtendimento: "Mecânica Geral e Injeção", Tipo_Atendimento: "Mecânica Geral e Injeção",
+          mecanicoResponsavel: "Carlos Silva (Chefe de Oficina)", Mecanico_Responsavel: "Carlos Silva (Chefe de Oficina)",
+          isBase: true, Flag_Oficina_Base: true
+        },
+        {
+          id: "OFI_002", ID_Oficina: "OFI_002",
+          nomeFantasia: "FLORIPA CASA E CONSTRUCAO LTDA", Nome_Fantasia: "FLORIPA CASA E CONSTRUCAO LTDA",
+          nomeJuridico: "Floripa Casa e Construção LTDA", Nome_Juridico: "Floripa Casa e Construção LTDA",
+          cnpjh: "59.997.717/0001-00", CNPJ: "59.997.717/0001-00",
+          endereco: "Estrada Vereador Onildo Lemos, 728 - Florianópolis, SC", Endereco: "Estrada Vereador Onildo Lemos, 728 - Florianópolis, SC",
+          contatoMensagens: "5548996720566", Contato_Mensagens: "5548996720566",
+          contatoCelular: "(48) 99672-0566", Contato_Celular: "(48) 99672-0566",
+          telefoneFisico: "(48) 3269-1000", Telefone_Fisico: "(48) 3269-1000",
+          emails: "fiscal@floripacasa.com.br", Emails: "fiscal@floripacasa.com.br",
+          tipoAtendimento: "Fornecedor de Peças / Insumos", Tipo_Atendimento: "Fornecedor de Peças / Insumos",
+          mecanicoResponsavel: "Central de Vendas", Mecanico_Responsavel: "Central de Vendas",
+          isBase: false, Flag_Oficina_Base: false
+        }
+      ],
       vehicles: [],
       selectedVehicleId: null,
       prescriptivePlan: [],
