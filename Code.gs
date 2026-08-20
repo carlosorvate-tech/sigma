@@ -1681,9 +1681,9 @@ function getOficinas() {
       "Tipo_Atendimento", "Mecanico_Responsavel", "Flag_Oficina_Base"
     ]);
     aba.appendRow([
-      "OFI_001", "Oficina Mecânica Precision Auto", "Precision Manutenções Automotivas LTDA", "12.345.678/0001-90",
-      "Av. Principal, 1500 - São Paulo, SP", "5511987654321", "(11) 98765-4321", "(11) 3456-7890", "contato@precisionauto.com.br",
-      "Mecânica Geral / Injeção", "Carlos Silva (Chefe de Oficina)", "TRUE"
+      "OFI_001", "Auto Mecânica República", "Auto Mecânica República LTDA", "00.000.000/0001-00",
+      "Rua da República, Centro - São Paulo, SP", "5511987654321", "(11) 98765-4321", "(11) 3255-0000", "contato@automecanicarepublica.com.br",
+      "Mecânica Especializada PSA, Injeção e Câmbio", "Responsável Técnico", "TRUE"
     ]);
     aba.appendRow([
       "OFI_002", "FLORIPA CASA E CONSTRUCAO LTDA", "Floripa Casa e Construção LTDA", "59.997.717/0001-00",
@@ -1791,7 +1791,7 @@ function testeConexaoGemini() { var res = consultarGeminiSigma('Teste de conecti
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.teste === 'ia') {
-    var res = consultarGeminiSigma('Responda exatamente: Conex�o corporativa estabelecida com sucesso.', {ativo: 'Infinitus-Core-Test'});
+    var res = consultarGeminiSigma('Responda exatamente: Conex�o corporativa estabelecida com sucesso.', {ativo: 'Infinitus-Core-Test'});
     return HtmlService.createHtmlOutput('<h2>Status da IA Corporativa (Gemini Pro)</h2><pre>' + JSON.stringify(res, null, 2) + '</pre>');
   }
   return HtmlService.createHtmlOutputFromFile('index');
