@@ -13,8 +13,7 @@ const SHEET_NAMES = {
   ATIVOS: 'ATIVOS',
   PLANO_PRESCRITIVO: 'PLANO_PRESCRITIVO',
   REGISTRO_OCORRENCIAS: 'REGISTRO_OCORRENCIAS',
-  DASH_CALCULOS: 'DASH_CALCULOS',
-  PRESTADORES: 'PRESTADORES_SERVICO'
+  DASH_CALCULOS: 'DASH_CALCULOS'
 };
 
 function doGet(e) {
@@ -1620,99 +1619,4 @@ function recomporBancoDadosCanonico() {
   canonicalPrescriptions.forEach(row => sheetPlano.appendRow(row));
 
   return { success: true, message: 'Banco de dados 100% auditado e calibrado com a NF-e 000.001.414.' };
-}
-
-
-/**
- * MÓDULO ANEXO DE PRESTADORES DE SERVIÇO E OFICINA BASE
- */
-function getPrestadores() {
-  const ss = getSpreadsheet();
-  const sheet = getOrCreateSheet(ss, SHEET_NAMES.PRESTADORES);
-  if (sheet.getLastRow() <= 1) {
-    sheet.clear();
-    sheet.appendRow(['ID', 'Nome', 'Tipo', 'Especialidade', 'Telefone', 'WhatsApp', 'Email', 'CidadeUF', 'OficinaBase', 'VeiculoID', 'Observacoes']);
-    sheet.appendRow(['PREST-001', 'Oficina Especializada Precision Auto', 'Oficina Mecânica Especializada', 'Mecânica Geral, Injeção e Câmbio AL4', '(11) 98765-4321', '5511987654321', 'contato@precisionauto.com.br', 'São Paulo - SP', true, 'VEIC-001', 'Oficina base de preferência do veículo']);
-    sheet.appendRow(['PREST-002', 'FLORIPA CASA E CONSTRUCAO LTDA', 'Fornecedor de Peças / Insumos', 'Autopeças, Aditivos e Fluídos', '(48) 99672-0566', '5548996720566', 'contato@floripacasa.com.br', 'Florianópolis - SC', false, 'VEIC-001', 'Fornecedor de peças e aditivos']);
-  }
-  const data = sheet.getDataRange().getValues();
-  const prestadores = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) {
-      prestadores.push({
-        id: data[i][0],
-        ID: data[i][0],
-        nome: data[i][1],
-        Nome: data[i][1],
-        tipo: data[i][2],
-        Tipo: data[i][2],
-        especialidade: data[i][3],
-        Especialidade: data[i][3],
-        telefone: data[i][4],
-        Telefone: data[i][4],
-        whatsapp: data[i][5],
-        WhatsApp: data[i][5],
-        email: data[i][6],
-        Email: data[i][6],
-        cidadeUF: data[i][7],
-        CidadeUF: data[i][7],
-        oficinaBase: Boolean(data[i][8]),
-        OficinaBase: Boolean(data[i][8]),
-        veiculoId: data[i][9],
-        VeiculoID: data[i][9],
-        observacoes: data[i][10],
-        Observacoes: data[i][10]
-      });
-    }
-  }
-  return prestadores;
-}
-
-function savePrestador(prestador) {
-  const ss = getSpreadsheet();
-  const sheet = getOrCreateSheet(ss, SHEET_NAMES.PRESTADORES);
-  const pId = prestador.id || prestador.ID || ('PREST-' + String(new Date().getTime()).slice(-4));
-  const data = sheet.getDataRange().getValues();
-
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(pId)) {
-      sheet.getRange(i + 1, 2).setValue(prestador.nome || data[i][1]);
-      sheet.getRange(i + 1, 3).setValue(prestador.tipo || data[i][2]);
-      sheet.getRange(i + 1, 4).setValue(prestador.especialidade || data[i][3]);
-      sheet.getRange(i + 1, 5).setValue(prestador.telefone || data[i][4]);
-      sheet.getRange(i + 1, 6).setValue(prestador.whatsapp || data[i][5]);
-      sheet.getRange(i + 1, 7).setValue(prestador.email || data[i][6]);
-      sheet.getRange(i + 1, 8).setValue(prestador.cidadeUF || data[i][7]);
-      sheet.getRange(i + 1, 9).setValue(Boolean(prestador.oficinaBase));
-      sheet.getRange(i + 1, 10).setValue(prestador.veiculoId || data[i][9] || 'VEIC-001');
-      sheet.getRange(i + 1, 11).setValue(prestador.observacoes || data[i][10]);
-      return { success: true, message: 'Prestador atualizado com sucesso.', id: pId };
-    }
-  }
-
-  sheet.appendRow([
-    pId,
-    prestador.nome || '',
-    prestador.tipo || 'Oficina Mecânica Especializada',
-    prestador.especialidade || '',
-    prestador.telefone || '',
-    prestador.whatsapp || '',
-    prestador.email || '',
-    prestador.cidadeUF || '',
-    Boolean(prestador.oficinaBase),
-    prestador.veiculoId || 'VEIC-001',
-    prestador.observacoes || ''
-  ]);
-  return { success: true, message: 'Prestador cadastrado com sucesso.', id: pId };
-}
-
-function definirOficinaBase(prestadorId, veiculoId) {
-  const ss = getSpreadsheet();
-  const sheet = getOrCreateSheet(ss, SHEET_NAMES.PRESTADORES);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    const isTarget = String(data[i][0]) === String(prestadorId);
-    sheet.getRange(i + 1, 9).setValue(isTarget);
-  }
-  return { success: true, message: 'Oficina base de preferência atualizada com sucesso.' };
 }
