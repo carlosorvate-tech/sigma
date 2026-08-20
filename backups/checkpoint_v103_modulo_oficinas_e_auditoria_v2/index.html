@@ -2042,13 +2042,12 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       const vehicleLogs = state.logs.filter(l => String(l.VeiculoID) === String(v.ID || v.id));
       const ultimaOficina = vehicleLogs.length > 0 ? (vehicleLogs[0].OficinaNome || 'Oficina Registrada') : 'Nenhuma ocorrência';
       
-      // Renderizar Oficina Base da tabela Oficinas
-      const oficinasList = state.oficinas || state.prestadores || [];
-      const oficinaBase = oficinasList.find(o => o.isBase || o.Flag_Oficina_Base || o.oficinaBase);
-      const nomeOficinaExibir = oficinaBase ? (oficinaBase.nomeFantasia || oficinaBase.Nome_Fantasia || oficinaBase.nome) : 'Definir Oficina Base';
+      const prestadores = state.prestadores || [];
+      const oficinaPref = prestadores.find(p => p.oficinaBase || p.OficinaBase);
+      const nomeOficinaExibir = oficinaPref ? (oficinaPref.nome || oficinaPref.Nome) : 'Definir Oficina Base';
       const elOficina = document.getElementById('vehicleOficinaText');
       if (elOficina) {
-        elOficina.innerHTML = `<span class="cursor-pointer hover:underline text-amber-300 font-semibold" onclick="openPrestadoresModal()" title="Clique para gerenciar a oficina base">${nomeOficinaExibir}</span>`;
+        elOficina.innerHTML = `<span class="cursor-pointer hover:underline text-amber-300 font-semibold" onclick="openPrestadoresModal()" title="Clique para gerenciar ou alterar a oficina base">${nomeOficinaExibir}</span>`;
       }
 
 
@@ -2796,7 +2795,6 @@ function renderLogsTable() {
     }
 
     
-    // --- GESTÃO CORPORATIVA DE OFICINAS & AUDITORIA ---
     function openPrestadoresModal() {
       renderPrestadoresList();
       document.getElementById('modalPrestadores').classList.remove('hidden');
@@ -2804,174 +2802,92 @@ function renderLogsTable() {
     }
 
     function closePrestadoresModal() {
-      cancelarEdicaoPrestador();
       document.getElementById('modalPrestadores').classList.add('hidden');
     }
 
     function renderPrestadoresList() {
       const listContainer = document.getElementById('prestadoresListContainer');
-      const oficinas = state.oficinas || state.prestadores || [];
-      if (oficinas.length === 0) {
-        listContainer.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">Nenhuma oficina cadastrada na base. Preencha o formulário abaixo.</div>';
+      const prestadores = state.prestadores || [];
+      if (prestadores.length === 0) {
+        listContainer.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">Nenhum prestador ou oficina cadastrado. Adicione um novo prestador abaixo.</div>';
         return;
       }
 
-      listContainer.innerHTML = oficinas.map(o => {
-        const isBase = o.isBase || o.Flag_Oficina_Base || o.oficinaBase;
-        const oId = o.id || o.ID_Oficina;
-        const nome = o.nomeFantasia || o.Nome_Fantasia || o.nome;
-        const cnpj = o.cnpjh || o.CNPJ || '';
-        const msg = o.contatoMensagens || o.Contato_Mensagens || '';
-        const cel = o.contatoCelular || o.Contato_Celular || o.telefone || '';
-        const email = o.emails || o.Emails || '';
-        const tipo = o.tipoAtendimento || o.Tipo_Atendimento || 'Oficina Especializada';
-        const mecanico = o.mecanicoResponsavel || o.Mecanico_Responsavel || '';
-
+      listContainer.innerHTML = prestadores.map(p => {
+        const isBase = p.oficinaBase || p.OficinaBase;
+        const pId = p.id || p.ID;
+        const nome = p.nome || p.Nome;
+        const tipo = p.tipo || p.Tipo || 'Oficina Mecânica';
+        const esp = p.especialidade || p.Especialidade || 'Mecânica Geral';
+        const tel = p.telefone || p.Telefone || p.whatsapp || p.WhatsApp || 'Não informado';
         return `
           <div class="p-3 rounded-xl bg-slate-900 border ${isBase ? 'border-amber-500/80 bg-amber-950/20' : 'border-slate-800'} flex items-center justify-between gap-3">
-            <div class="space-y-1">
+            <div>
               <div class="flex items-center gap-2">
                 <span class="text-sm font-bold text-white">${nome}</span>
                 ${isBase ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">★ OFICINA BASE</span>' : ''}
               </div>
-              <div class="text-xs text-slate-400">${tipo} ${cnpj ? '• CNPJ: ' + cnpj : ''} ${mecanico ? '• Resp: ' + mecanico : ''}</div>
-              <div class="text-[11px] text-slate-300 flex items-center gap-3 pt-0.5">
-                ${msg ? `<span class="flex items-center gap-1 text-emerald-400 font-mono"><i data-lucide="message-circle" class="w-3 h-3"></i>WhatsApp: ${msg}</span>` : ''}
-                ${cel ? `<span class="flex items-center gap-1 text-sky-400 font-mono"><i data-lucide="phone" class="w-3 h-3"></i>${cel}</span>` : ''}
-                ${email ? `<span class="flex items-center gap-1 text-slate-400"><i data-lucide="mail" class="w-3 h-3"></i>${email}</span>` : ''}
+              <div class="text-xs text-slate-400 mt-0.5">${tipo} • ${esp}</div>
+              <div class="text-xs text-slate-300 mt-0.5 flex items-center gap-1">
+                <i data-lucide="phone" class="w-3 h-3 text-sky-400"></i>
+                <span>${tel}</span>
               </div>
             </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-              ${!isBase ? `<button type="button" onclick="setOficinaBaseOficial('${oId}')" title="Tornar Oficina Base" class="p-1.5 rounded-lg bg-slate-800 hover:bg-amber-600 hover:text-white text-amber-400 transition">
-                <i data-lucide="star" class="w-4 h-4"></i>
-              </button>` : ''}
-              <button type="button" onclick="editarOficina('${oId}')" title="Editar Oficina" class="p-1.5 rounded-lg bg-slate-800 hover:bg-sky-600 hover:text-white text-slate-300 transition">
-                <i data-lucide="edit-3" class="w-4 h-4"></i>
-              </button>
-              <button type="button" onclick="removerOficina('${oId}')" title="Excluir Oficina" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600 hover:text-white text-rose-400 transition">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
+            <div>
+              ${!isBase ? `<button type="button" onclick="setOficinaBase('${pId}')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-amber-600 hover:text-white text-slate-300 text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                <span>Tornar Base</span>
+              </button>` : '<span class="text-xs font-bold text-amber-400">Ativa no Banner</span>'}
             </div>
           </div>
         `;
       }).join('');
-      if (window.lucide) lucide.createIcons();
     }
 
-    function setOficinaBaseOficial(idOficina) {
-      const lista = state.oficinas || state.prestadores || [];
-      lista.forEach(o => {
-        const match = (String(o.id || o.ID_Oficina) === String(idOficina));
-        o.isBase = match;
-        o.Flag_Oficina_Base = match;
-        o.oficinaBase = match;
-      });
+    function setOficinaBase(prestadorId) {
+      if (state.prestadores) {
+        state.prestadores.forEach(p => {
+          p.oficinaBase = (String(p.id || p.ID) === String(prestadorId));
+          p.OficinaBase = p.oficinaBase;
+        });
+      }
       renderCurrentVehicleView();
       renderPrestadoresList();
       if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.definirOficinaBaseOficial(idOficina);
+        google.script.run.definirOficinaBase(prestadorId, state.selectedVehicleId || 'VEIC-001');
       }
-      if (typeof showToast === 'function') showToast('Oficina base de preferência definida com sucesso!');
-    }
-
-    function editarOficina(idOficina) {
-      const lista = state.oficinas || state.prestadores || [];
-      const o = lista.find(item => String(item.id || item.ID_Oficina) === String(idOficina));
-      if (!o) return;
-      document.getElementById('pEditId').value = o.id || o.ID_Oficina;
-      document.getElementById('pNome').value = o.nomeFantasia || o.Nome_Fantasia || o.nome || '';
-      document.getElementById('pNomeJuridico').value = o.nomeJuridico || o.Nome_Juridico || '';
-      document.getElementById('pCNPJ').value = o.cnpjh || o.CNPJ || '';
-      document.getElementById('pEndereco').value = o.endereco || o.Endereco || '';
-      document.getElementById('pWhatsApp').value = o.contatoMensagens || o.Contato_Mensagens || o.whatsapp || '';
-      document.getElementById('pTelefone').value = o.contatoCelular || o.Contato_Celular || o.telefone || '';
-      document.getElementById('pTelefoneFisico').value = o.telefoneFisico || o.Telefone_Fisico || '';
-      document.getElementById('pEmail').value = o.emails || o.Emails || o.email || '';
-      document.getElementById('pTipo').value = o.tipoAtendimento || o.Tipo_Atendimento || 'Oficina Mecânica Especializada';
-      document.getElementById('pMecanico').value = o.mecanicoResponsavel || o.Mecanico_Responsavel || '';
-      document.getElementById('pIsBase').checked = Boolean(o.isBase || o.Flag_Oficina_Base || o.oficinaBase);
-
-      document.getElementById('formPrestadorTitle').innerHTML = '<i data-lucide="edit-3" class="w-4 h-4 text-amber-400"></i><span>Editar Cadastro de Oficina</span>';
-      document.getElementById('btnSalvarPrestadorText').innerText = 'Salvar Alterações';
-      document.getElementById('btnCancelEditPrestador').classList.remove('hidden');
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function cancelarEdicaoPrestador() {
-      document.getElementById('pEditId').value = '';
-      document.getElementById('formNovoPrestador').reset();
-      document.getElementById('formPrestadorTitle').innerHTML = '<i data-lucide="plus-circle" class="w-4 h-4"></i><span>Cadastrar Nova Oficina / Prestador</span>';
-      document.getElementById('btnSalvarPrestadorText').innerText = 'Salvar Oficina';
-      document.getElementById('btnCancelEditPrestador').classList.add('hidden');
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function removerOficina(idOficina) {
-      if (!confirm('Deseja realmente excluir esta oficina da base?')) return;
-      if (state.oficinas) state.oficinas = state.oficinas.filter(o => String(o.id || o.ID_Oficina) !== String(idOficina));
-      if (state.prestadores) state.prestadores = state.prestadores.filter(o => String(o.id || o.ID_Oficina) !== String(idOficina));
-      renderCurrentVehicleView();
-      renderPrestadoresList();
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.excluirOficina(idOficina);
-      }
-      if (typeof showToast === 'function') showToast('Oficina excluída com sucesso.');
+      if (typeof showToast === 'function') showToast('Oficina base de preferência atualizada!');
     }
 
     function submitNovoPrestador(e) {
       e.preventDefault();
-      const editId = document.getElementById('pEditId').value.trim();
-      const oId = editId || ('OFI_' + new Date().getTime());
-      const isBase = document.getElementById('pIsBase').checked;
-
-      const oficinaObj = {
-        id: oId,
-        ID_Oficina: oId,
-        nomeFantasia: document.getElementById('pNome').value.trim(),
-        Nome_Fantasia: document.getElementById('pNome').value.trim(),
-        nomeJuridico: document.getElementById('pNomeJuridico').value.trim(),
-        Nome_Juridico: document.getElementById('pNomeJuridico').value.trim(),
-        cnpjh: document.getElementById('pCNPJ').value.trim(),
-        CNPJ: document.getElementById('pCNPJ').value.trim(),
-        endereco: document.getElementById('pEndereco').value.trim(),
-        Endereco: document.getElementById('pEndereco').value.trim(),
-        contatoMensagens: document.getElementById('pWhatsApp').value.trim(),
-        Contato_Mensagens: document.getElementById('pWhatsApp').value.trim(),
-        contatoCelular: document.getElementById('pTelefone').value.trim(),
-        Contato_Celular: document.getElementById('pTelefone').value.trim(),
-        telefoneFisico: document.getElementById('pTelefoneFisico').value.trim(),
-        Telefone_Fisico: document.getElementById('pTelefoneFisico').value.trim(),
-        emails: document.getElementById('pEmail').value.trim(),
-        Emails: document.getElementById('pEmail').value.trim(),
-        tipoAtendimento: document.getElementById('pTipo').value,
-        Tipo_Atendimento: document.getElementById('pTipo').value,
-        mecanicoResponsavel: document.getElementById('pMecanico').value.trim(),
-        Mecanico_Responsavel: document.getElementById('pMecanico').value.trim(),
-        isBase: isBase,
-        Flag_Oficina_Base: isBase
+      const novo = {
+        nome: document.getElementById('pNome').value.trim(),
+        tipo: document.getElementById('pTipo').value,
+        especialidade: document.getElementById('pEspecialidade').value.trim(),
+        telefone: document.getElementById('pTelefone').value.trim(),
+        whatsapp: document.getElementById('pTelefone').value.trim(),
+        oficinaBase: document.getElementById('pIsBase').checked,
+        veiculoId: state.selectedVehicleId || 'VEIC-001'
       };
 
-      if (!state.oficinas) state.oficinas = [];
-      if (isBase) {
-        state.oficinas.forEach(item => { item.isBase = false; item.Flag_Oficina_Base = false; });
+      if (!state.prestadores) state.prestadores = [];
+      if (novo.oficinaBase) {
+        state.prestadores.forEach(p => { p.oficinaBase = false; p.OficinaBase = false; });
       }
-
-      if (editId) {
-        const idx = state.oficinas.findIndex(item => String(item.id || item.ID_Oficina) === String(editId));
-        if (idx >= 0) state.oficinas[idx] = oficinaObj;
-      } else {
-        state.oficinas.push(oficinaObj);
-      }
-      state.prestadores = state.oficinas;
+      const pId = 'PREST-' + String(new Date().getTime()).slice(-4);
+      novo.id = pId;
+      novo.ID = pId;
+      state.prestadores.push(novo);
 
       renderCurrentVehicleView();
       renderPrestadoresList();
-      cancelarEdicaoPrestador();
+      document.getElementById('formNovoPrestador').reset();
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.salvarOficina(oficinaObj);
+        google.script.run.savePrestador(novo);
       }
-      if (typeof showToast === 'function') showToast(editId ? 'Oficina atualizada com sucesso!' : 'Oficina cadastrada com sucesso!');
+      if (typeof showToast === 'function') showToast('Prestador cadastrado com sucesso!');
     }
 
     function openEditVehicleModal() {
