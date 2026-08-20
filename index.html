@@ -2797,6 +2797,7 @@ function renderLogsTable() {
 
     
     // --- GESTÃO CORPORATIVA DE OFICINAS & AUDITORIA ---
+    // --- GESTÃO CORPORATIVA DE OFICINAS (12 CAMPOS) ---
     function openPrestadoresModal() {
       renderPrestadoresList();
       document.getElementById('modalPrestadores').classList.remove('hidden');
@@ -2812,7 +2813,7 @@ function renderLogsTable() {
       const listContainer = document.getElementById('prestadoresListContainer');
       const oficinas = state.oficinas || state.prestadores || [];
       if (oficinas.length === 0) {
-        listContainer.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">Nenhuma oficina cadastrada na base. Preencha o formulário abaixo.</div>';
+        listContainer.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">Nenhuma oficina cadastrada. Cadastre uma nova oficina no formulário abaixo.</div>';
         return;
       }
 
@@ -2824,7 +2825,7 @@ function renderLogsTable() {
         const msg = o.contatoMensagens || o.Contato_Mensagens || '';
         const cel = o.contatoCelular || o.Contato_Celular || o.telefone || '';
         const email = o.emails || o.Emails || '';
-        const tipo = o.tipoAtendimento || o.Tipo_Atendimento || 'Oficina Especializada';
+        const tipo = o.tipoAtendimento || o.Tipo_Atendimento || 'Mecânica Geral';
         const mecanico = o.mecanicoResponsavel || o.Mecanico_Responsavel || '';
 
         return `
@@ -2887,7 +2888,7 @@ function renderLogsTable() {
       document.getElementById('pTelefone').value = o.contatoCelular || o.Contato_Celular || o.telefone || '';
       document.getElementById('pTelefoneFisico').value = o.telefoneFisico || o.Telefone_Fisico || '';
       document.getElementById('pEmail').value = o.emails || o.Emails || o.email || '';
-      document.getElementById('pTipo').value = o.tipoAtendimento || o.Tipo_Atendimento || 'Oficina Mecânica Especializada';
+      document.getElementById('pTipo').value = o.tipoAtendimento || o.Tipo_Atendimento || 'Mecânica Geral';
       document.getElementById('pMecanico').value = o.mecanicoResponsavel || o.Mecanico_Responsavel || '';
       document.getElementById('pIsBase').checked = Boolean(o.isBase || o.Flag_Oficina_Base || o.oficinaBase);
 
@@ -4036,53 +4037,110 @@ function deleteMaintenanceLog(logId) {
 </script>
 
 
+  <!-- MODAL DE GESTÃO CORPORATIVA DE OFICINAS - 12 CAMPOS OFICIAIS -->
   <div id="modalPrestadores" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+    <div class="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[94vh] flex flex-col shadow-2xl">
       <div class="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/60">
         <div class="flex items-center gap-2">
           <i data-lucide="building-2" class="w-5 h-5 text-sky-400"></i>
-          <h3 class="text-sm font-bold text-white">Prestadores de Serviço & Oficina Base de Preferência</h3>
+          <div>
+            <h3 class="text-sm font-bold text-white">Gestão de Oficinas Credenciadas & Roteamento (v2.0)</h3>
+            <p class="text-[11px] text-slate-400">Estrutura oficial de 12 campos: credenciamento, canais de contato e acionamento direto.</p>
+          </div>
         </div>
         <button type="button" onclick="closePrestadoresModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="p-4 overflow-y-auto space-y-4 flex-1">
+      <div class="p-4 overflow-y-auto space-y-5 flex-1">
         <div>
-          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Oficinas e Fornecedores Cadastrados</h4>
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+            <span>Oficinas Cadastradas</span>
+            <span class="text-[10px] text-slate-400 font-normal">Clique no ícone ⭐ para eleger a Oficina Base</span>
+          </h4>
           <div id="prestadoresListContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1">
           </div>
         </div>
 
         <div class="pt-4 border-t border-slate-800">
-          <h4 class="text-xs font-bold text-sky-400 uppercase tracking-wider mb-3">Cadastrar Novo Prestador / Oficina</h4>
+          <h4 id="formPrestadorTitle" class="text-xs font-bold text-sky-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Cadastrar Nova Oficina / Prestador</span>
+          </h4>
           <form id="formNovoPrestador" onsubmit="submitNovoPrestador(event)" class="space-y-3">
+            <input type="hidden" id="pEditId" value="">
+
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Nome / Razão Social</label>
-                <input type="text" id="pNome" required placeholder="Ex: Oficina Mecânica Precision" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700">
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Nome Fantasia (Comercial)</label>
+                <input type="text" id="pNome" required placeholder="Ex: Oficina Mecânica Precision Auto" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700">
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Tipo de Prestador</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Nome Jurídico (Razão Social)</label>
+                <input type="text" id="pNomeJuridico" placeholder="Ex: Precision Manutenções Automotivas LTDA" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">CNPJ Formatado</label>
+                <input type="text" id="pCNPJ" placeholder="00.000.000/0001-00" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700 font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Tipo de Atendimento / Especialidade</label>
                 <select id="pTipo" required class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-2 py-2 border border-slate-700">
-                  <option value="Oficina Mecânica Especializada">Oficina Mecânica Especializada</option>
-                  <option value="Auto Elétrica & Injeção">Auto Elétrica & Injeção</option>
-                  <option value="Centro Automotivo / Troca de Óleo">Centro Automotivo / Troca de Óleo</option>
+                  <option value="Mecânica Geral & Injeção">Mecânica Geral & Injeção</option>
+                  <option value="Mecânica Pesada">Mecânica Pesada</option>
+                  <option value="Hidráulica & Suspensão">Hidráulica & Suspensão</option>
+                  <option value="Injeção Eletrônica & Diagnóstico">Injeção Eletrônica & Diagnóstico</option>
+                  <option value="Corretiva Geral">Corretiva Geral</option>
+                  <option value="Troca de Óleo & Lubrificação">Troca de Óleo & Lubrificação</option>
                   <option value="Concessionária Autorizada">Concessionária Autorizada</option>
                   <option value="Fornecedor de Peças / Insumos">Fornecedor de Peças / Insumos</option>
                 </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Mecânico / Técnico Responsável</label>
+                <input type="text" id="pMecanico" placeholder="Ex: Carlos Silva (Chefe de Oficina)" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                  <i data-lucide="message-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+                  <span>Contato Mensagens (WhatsApp)</span>
+                </label>
+                <input type="text" id="pWhatsApp" required placeholder="5511987654321" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700 font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                  <i data-lucide="phone" class="w-3.5 h-3.5 text-sky-400"></i>
+                  <span>Contato Celular (Voz)</span>
+                </label>
+                <input type="text" id="pTelefone" placeholder="(11) 98765-4321" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700 font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                  <i data-lucide="phone-call" class="w-3.5 h-3.5 text-slate-400"></i>
+                  <span>Telefone Físico (Fixo)</span>
+                </label>
+                <input type="text" id="pTelefoneFisico" placeholder="(11) 3456-7890" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700 font-mono">
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Especialidade / Foco</label>
-                <input type="text" id="pEspecialidade" placeholder="Ex: Mecânica PSA, Câmbio AL4, Suspensão" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700">
+                <label class="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                  <i data-lucide="mail" class="w-3.5 h-3.5 text-amber-400"></i>
+                  <span>E-mails (Contato / Orçamentos)</span>
+                </label>
+                <input type="email" id="pEmail" placeholder="contato@oficina.com.br" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700">
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">WhatsApp / Telefone</label>
-                <input type="text" id="pTelefone" placeholder="(11) 98765-4321" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700">
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Endereço (Logística, Cidade, Região)</label>
+                <input type="text" id="pEndereco" placeholder="Av. Principal, 1500 - São Paulo, SP" class="w-full bg-slate-900 text-xs text-slate-200 rounded-lg px-3 py-2 border border-slate-700">
               </div>
             </div>
 
@@ -4092,15 +4150,19 @@ function deleteMaintenanceLog(logId) {
                 <span class="font-semibold">Definir como Oficina Base de Preferência do Veículo</span>
               </label>
 
-              <button type="submit" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Salvar Prestador</span>
-              </button>
+              <div class="flex items-center gap-2">
+                <button type="button" id="btnCancelEditPrestador" onclick="cancelarEdicaoPrestador()" class="px-3.5 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs hidden">Cancelar Edição</button>
+                <button type="submit" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition">
+                  <i data-lucide="save" class="w-4 h-4"></i>
+                  <span id="btnSalvarPrestadorText">Salvar Oficina</span>
+                </button>
+              </div>
             </div>
           </form>
         </div>
       </div>
     </div>
+  </div>
   </div>
 
 </body>
