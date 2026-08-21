@@ -737,31 +737,26 @@ function addVehicle(vehicle) {
   
   sheet.appendRow(row);
 
-  // GERAÇÃO PERSONALIZADA DO PLANO OEM VIA IA COM TRAVAS DE SEGURANÇA
+  // Inicializar Plano Prescritivo Base para o novo veículo
   try {
-    const planoResultado = gerarPlanoPrescritivoOEMComIA(id, marca, modelo, anoMod, motor, comb, trans, dist, regime);
-    const diretrizes = planoResultado.diretrizes || [];
     const sheetPlano = getOrCreateSheet(ss, SHEET_NAMES.PLANO_PRESCRITIVO);
-    
-    diretrizes.forEach((d, idx) => {
+    const defaultPlans = [
+      ['Substituição do Óleo do Motor e Filtro', 'Motor / Trem de Força', 10000, 12, 10000, 12, 'CRITICA', true, 'OEM', 'Óleo e filtro de motor'],
+      ['Substituição do Filtro de Combustível de Linha', 'Motor / Trem de Força', 10000, 12, 10000, 12, 'CRITICA', true, 'OEM', 'Filtro de combustível'],
+      ['Substituição do Filtro de Ar do Motor', 'Motor / Trem de Força', 10000, 12, 10000, 12, 'ALERTA', true, 'OEM', 'Elemento de ar'],
+      ['Substituição do Filtro de Cabine / Ar-Condicionado', 'Habitáculo / Climatização', 10000, 12, 10000, 12, 'ALERTA', true, 'OEM', 'Filtro anti-pólen'],
+      ['Sistema de Arrefecimento Completo (Bomba, Válvula, Trocador)', 'Arrefecimento', 30000, 24, 20000, 12, 'CRITICA', true, 'OEM', 'Aditivo de arrefecimento'],
+      ['Substituição Completa do Fluido de Freio (DOT 4)', 'Freios', 20000, 24, 10000, 12, 'CRITICA', true, 'OEM', 'Fluido DOT 4'],
+      ['Substituição do Kit Correia Dentada e Tensor', 'Sincronismo / Motor', 70000, 48, 50000, 36, 'CRITICA', true, 'OEM', 'Kit de sincronismo'],
+      ['Substituição das Velas de Ignição', 'Ignição / Motor', 40000, 24, 30000, 24, 'CRITICA', true, 'OEM', 'Velas de ignição']
+    ];
+    defaultPlans.forEach((p, idx) => {
       sheetPlano.appendRow([
         'PRES-' + id + '-' + (idx + 1),
-        d.intervencao,
-        d.subsistema,
-        d.intervaloKm,
-        d.intervaloMeses,
-        d.intervaloKm,
-        d.intervaloMeses,
-        d.prioridade,
-        true,
-        d.origemFonte || 'MANUAL_OEM_FABRICANTE',
-        d.especificacao + ' - ' + (d.observacao || ''),
-        id
+        p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], id
       ]);
     });
-  } catch(e) { 
-    Logger.log('Erro ao gerar plano prescritivo com IA para ' + id + ': ' + e); 
-  }
+  } catch(e) { Logger.log('Erro ao criar plano prescritivo para ' + id + ': ' + e); }
 
   return { success: true, vehicleId: id, placa: placa, data: row };
 }
@@ -1839,117 +1834,4 @@ function doGet(e) {
     return HtmlService.createHtmlOutput('<h2>Status da IA Corporativa (Gemini Pro)</h2><pre>' + JSON.stringify(res, null, 2) + '</pre>');
   }
   return HtmlService.createHtmlOutputFromFile('index');
-}
-
-
-/**
- * MOTOR DE GERAÇÃO PRESCRITIVA OEM AUTOMOTIVA VIA IA (GEMINI CORE + TRAVAS DE SEGURANÇA)
- */
-function gerarPlanoPrescritivoOEMComIA(veiculoId, marca, modelo, ano, motorizacao, combustivel, transmissao, tipoDistribuicao, regimeUso) {
-  try {
-    const apiKey = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || DEFAULT_GEMINI_KEY || '';
-    const cleanMarca = String(marca || '').trim().toUpperCase();
-    const cleanModelo = String(modelo || '').trim().toUpperCase();
-    const cleanAno = String(ano || '2015').trim();
-    const cleanMotor = String(motorizacao || 'Motor 2.0 16V').trim();
-    const cleanTrans = String(transmissao || 'Manual').trim();
-    const cleanDist = String(tipoDistribuicao || 'Correia Dentada').trim();
-    const isSevero = String(regimeUso || '').toUpperCase().includes('SEVERO');
-
-    if (apiKey && cleanMarca && cleanModelo) {
-      const prompt = "Você é o Engenheiro Especialista Chefe em Manutenção Automotiva Preventiva e Prescritiva OEM do SIGMA CMMS.\n" +
-        "Gere a lista estrita de diretrizes de manutenção periódica recomendadas pela MONTADORA (OEM) para o seguinte veículo:\n" +
-        "- Marca: " + cleanMarca + "\n" +
-        "- Modelo: " + cleanModelo + "\n" +
-        "- Ano/Modelo: " + cleanAno + "\n" +
-        "- Motorização: " + cleanMotor + "\n" +
-        "- Combustível: " + combustivel + "\n" +
-        "- Transmissão: " + cleanTrans + "\n" +
-        "- Tipo de Distribuição: " + cleanDist + "\n" +
-        "- Regime de Uso: " + (isSevero ? "SEVERO URBANO (redução proporcional de intervalos)" : "NORMAL / RODOVIÁRIO") + "\n\n" +
-        "Retorne ESTRITAMENTE um array JSON puro (sem markdown) contendo as diretrizes de manutenção periódica com os seguintes campos:\n" +
-        "[\n" +
-        "  {\n" +
-        '    "intervencao": "Nome da Intervenção (ex: Substituição do Óleo do Motor e Filtro)",\n' +
-        '    "subsistema": "Motor / Trem de Força | Arrefecimento | Freios | Sincronismo / Motor | Ignição / Motor | Habitáculo / Climatização | Transmissão / Câmbio | Suspensão / Direção",\n' +
-        '    "intervaloKm": 10000,\n' +
-        '    "intervaloMeses": 12,\n' +
-        '    "prioridade": "CRITICA | ALERTA",\n' +
-        '    "especificacao": "Norma técnica exata ou viscosidade (ex: Óleo 10W40 PSA B71 2296 / Fluido DOT 4 / Vela de Iridium)",\n' +
-        '    "origemFonte": "MANUAL_OEM_FABRICANTE",\n' +
-        '    "observacao": "Orientações técnicas e precauções de montadora"\n' +
-        "  }\n" +
-        "]";
-
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
-      const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: "application/json"
-        }
-      };
-
-      const res = UrlFetchApp.fetch(url, {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      });
-
-      if (res.getResponseCode() === 200) {
-        const jsonRes = JSON.parse(res.getContentText());
-        const rawText = jsonRes.candidates[0].content.parts[0].text;
-        const cleanJson = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
-        const parsedArray = JSON.parse(cleanJson);
-
-        if (Array.isArray(parsedArray) && parsedArray.length > 0) {
-          // APLICAR TRAVAS DE ENGENHARIA (Sanity Checks)
-          const diretrizesValidadas = parsedArray.map(item => {
-            let km = Number(item.intervaloKm || 10000);
-            let meses = Number(item.intervaloMeses || 12);
-
-            // Travas de segurança física
-            if (item.subsistema === 'Motor / Trem de Força' && item.intervencao.toLowerCase().includes('óleo')) {
-              if (km > 15000) km = isSevero ? 7500 : 10000;
-              if (km < 5000) km = 5000;
-            }
-            if (cleanDist.includes('Corrente') && item.intervencao.toLowerCase().includes('correia dentada')) {
-              km = 200000;
-              item.intervencao = 'Inspeção da Corrente de Distribuição';
-            }
-
-            return {
-              intervencao: item.intervencao,
-              subsistema: item.subsistema || 'Motor / Trem de Força',
-              intervaloKm: km,
-              intervaloMeses: meses,
-              prioridade: (item.prioridade || 'CRITICA').toUpperCase(),
-              especificacao: item.especificacao || 'Conforme Manual do Fabricante',
-              origemFonte: 'MANUAL_OEM_FABRICANTE',
-              observacao: item.observacao || 'Diretriz técnica gerada com base no manual do veículo'
-            };
-          });
-
-          return { success: true, diretrizes: diretrizesValidadas, fonte: 'GEMINI_OEM_AI' };
-        }
-      }
-    }
-  } catch(err) {
-    Logger.log('Aviso ao consultar Gemini para Plano Prescritivo: ' + err.toString());
-  }
-
-  // FALLBACK DETERMINÍSTICO BLINDADO
-  const fallback = [
-    { intervencao: 'Substituição do Óleo do Motor e Filtro', subsistema: 'Motor / Trem de Força', intervaloKm: 10000, intervaloMeses: 12, prioridade: 'CRITICA', especificacao: 'Lubrificante Homologado Montadora', origemFonte: 'CATALOGO_CANONICO_SIGMA', observacao: 'Troca periódica do óleo e filtro' },
-    { intervencao: 'Substituição do Filtro de Combustível de Linha', subsistema: 'Motor / Trem de Força', intervaloKm: 10000, intervaloMeses: 12, prioridade: 'CRITICA', especificacao: 'Elemento Filtrante de Linha', origemFonte: 'CATALOGO_CANONICO_SIGMA', observacao: 'Proteção dos bicos injetores' },
-    { intervencao: 'Substituição do Filtro de Ar do Motor', subsistema: 'Motor / Trem de Força', intervaloKm: 10000, intervaloMeses: 12, prioridade: 'ALERTA', especificacao: 'Filtro de Ar Seco', origemFonte: 'CATALOGO_CANONICO_SIGMA', observacao: 'Eficiência de queima e admissão' },
-    { intervencao: 'Substituição do Filtro de Cabine / Ar-Condicionado', subsistema: 'Habitáculo / Climatização', intervaloKm: 10000, intervaloMeses: 12, prioridade: 'ALERTA', especificacao: 'Filtro Anti-pólen', origemFonte: 'CATALOGO_CANONICO_SIGMA', observacao: 'Higienização e qualidade do ar' },
-    { intervencao: 'Sistema de Arrefecimento Completo (Bomba, Válvula, Trocador)', subsistema: 'Arrefecimento', intervaloKm: 20000, intervaloMeses: 12, prioridade: 'CRITICA', especificacao: 'Fluido Orgânico Concentrado', origemFonte: 'CATALOGO_CANONICO_SIGMA', observacao: 'Prevenção de corrosão e superaquecimento' },
-    { intervencao: 'Substituição Completa do Fluido de Freio (DOT 4)', subsistema: 'Freios', intervaloKm: 10000, intervaloMeses: 12, prioridade: 'CRITICA', especificacao: 'Fluido Sintético DOT 4', origemFonte: 'CATALOGO_CANONICO_SIGMA', observacao: 'Prevenção de vapor lock e umidade' },
-    { intervencao: tipoDistribuicao && tipoDistribuicao.includes('Corrente') ? 'Inspeção da Corrente de Distribuição' : 'Substituição do Kit Correia Dentada e Tensor', subsistema: 'Sincronismo / Motor', intervaloKm: tipoDistribuicao && tipoDistribuicao.includes('Corrente') ? 200000 : 70000, intervaloMeses: 48, prioridade: 'CRITICA', especificacao: 'Kit de Sincronismo OEM', origemFonte: 'CATALOGO_CANONICO_SIGMA', observacao: 'Sincronismo mestre do motor' },
-    { intervencao: 'Substituição das Velas de Ignição', subsistema: 'Ignição / Motor', intervaloKm: 40000, intervaloMeses: 24, prioridade: 'CRITICA', especificacao: 'Jogo de Velas Homologado', origemFonte: 'CATALOGO_CANONICO_SIGMA', observacao: 'Queima estequiométrica ideal' }
-  ];
-
-  return { success: true, diretrizes: fallback, fonte: 'CATALOGO_CANONICO_SIGMA' };
 }
