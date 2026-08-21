@@ -3413,59 +3413,27 @@ function deleteMaintenanceLog(logId) {
       const v = getSelectedVehicle();
 
       const parecerData = {
-        veiculoId: v ? (v.ID || v.id) : '',
+        veiculoId: v ? v.ID : '',
         placa: v ? (v.PlacaChassi || v.Placa || '') : '',
-        itemNombre: document.getElementById('parItemNombre') ? document.getElementById('parItemNombre').value : '',
-        subsistema: document.getElementById('parSubsistema') ? document.getElementById('parSubsistema').value : 'Motor/Trem de Força',
-        dataInspecao: document.getElementById('parData') ? document.getElementById('parData').value : new Date().toISOString().split('T')[0],
-        kmAtual: Number(document.getElementById('parKm') ? document.getElementById('parKm').value : (v ? (v.KMAtual || 0) : 0)),
-        oficinaNome: document.getElementById('parOficina') ? document.getElementById('parOficina').value : 'Oficina Credenciada',
-        parecerTexto: document.getElementById('parTexto') ? document.getElementById('parTexto').value : ''
+        itemNombre: document.getElementById('parItemNombre').value,
+        subsistema: document.getElementById('parSubsistema').value,
+        dataInspecao: document.getElementById('parData').value,
+        kmAtual: Number(document.getElementById('parKm').value),
+        oficinaNome: document.getElementById('parOficina').value,
+        parecerTexto: document.getElementById('parTexto').value
       };
 
-      // 1. Gravar localmente no state.logs imediatamente (resiliência total)
-      const newLog = {
-        id: 'LOG-PAR-' + Date.now(),
-        ID: 'LOG-PAR-' + Date.now(),
-        VeiculoID: parecerData.veiculoId,
-        veiculoId: parecerData.veiculoId,
-        Placa: parecerData.placa,
-        Data: parecerData.dataInspecao,
-        data: parecerData.dataInspecao,
-        KM: parecerData.kmAtual,
-        km: parecerData.kmAtual,
-        TipoManutencao: 'PREVENTIVA',
-        Tipo: 'PREVENTIVA',
-        Subsistema: parecerData.subsistema,
-        Sistema: parecerData.subsistema,
-        Subcausa: parecerData.itemNombre,
-        DescricaoServico: `[PARECER TÉCNICO / LAUDO]: ${parecerData.parecerTexto} (Avaliador: ${parecerData.oficinaNome})`,
-        OficinaNome: parecerData.oficinaNome,
-        ValorTotal: 0,
-        NumeroOS: 'LAUDO-' + Date.now().toString().slice(-4)
-      };
-
-      state.logs.push(newLog);
-      state.logs = deduplicateLogsList(state.logs);
-      saveStateToLocalStorage();
-
-      // 2. Fechar modal e renderizar tela imediatamente
-      closeParecerTecnicoModal();
-      renderCurrentVehicleView();
-
-      // 3. Enviar ao Google Apps Script
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(res => {
+            closeParecerTecnicoModal();
             loadData();
-            alert(res && res.message ? res.message : 'Parecer Técnico Registrado com sucesso!');
-          })
-          .withFailureHandler(err => {
-            console.error('Erro ao salvar parecer no Sheets:', err);
-            alert('✨ Parecer Técnico registrado e consolidado no sistema!');
+            alert(res.message || 'Parecer Técnico Registrado!');
           })
           .saveParecerTecnicoInspecao(parecerData);
       } else {
+        closeParecerTecnicoModal();
+        renderPrescriptiveCards();
         alert('✨ Parecer Técnico registrado com sucesso!');
       }
     }
