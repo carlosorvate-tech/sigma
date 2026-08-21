@@ -395,7 +395,7 @@ function processPrescriptiveSource(dadosIngestao, regimeArg, tipoFonteArg, dados
       const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || DEFAULT_GEMINI_KEY;
       if (!apiKey) throw new Error("Chave GEMINI_API_KEY não configurada.");
 
-      const modelName = 'gemini-2.5-flash';
+      const modelName = 'gemini-3.5-flash';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
       const prompt = `Você é o engenheiro-chefe de confiabilidade automotiva e mantenedor especialista do sistema SIGMA CMMS.
@@ -1056,7 +1056,7 @@ function processarDiagnosticoIA(veiculoId, relato) {
       return JSON.stringify(obterDiagnosticoLocal(relato));
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`;
     
     // Prompt com Scratchpad (Raciocínio) e restrição rigorosa
     const prompt = `Você é um engenheiro mecânico sênior do sistema SIGMA.
@@ -1144,7 +1144,7 @@ function processDocumentAI(base64Data, mimeType, fileName) {
     }
 
     if (apiKey && rawBase64) {
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=" + apiKey;
       const prompt = "Você é um perito automotivo e auditor de ordens de serviço do SIGMA.\n" +
         "Analise o documento anexo (Ordem de Serviço ou Nota Fiscal) e extraia rigorosamente os dados no seguinte formato JSON (apenas o JSON puro, sem markdown):\n" +
         "{\n" +
@@ -2017,50 +2017,5 @@ function saveParecerTecnicoInspecao(parecerData) {
   } catch(e) {
     Logger.log('Erro ao salvar parecer técnico: ' + e.toString());
     return { success: false, message: 'Erro ao registrar parecer: ' + e.toString() };
-  }
-}
-
-
-/**
- * ENDPOINTS DE SUPORTE À INGESTÃO MULTIMODAL E GESTÃO TÉCNICA (SIGMA CMMS)
- */
-function diagnosticarProblemaComIA(relato, dadosVeiculo) {
-  const vId = typeof dadosVeiculo === 'object' && dadosVeiculo !== null ? (dadosVeiculo.id || dadosVeiculo.ID || 'VEIC-001') : String(dadosVeiculo || 'VEIC-001');
-  return processarDiagnosticoIA(vId, relato);
-}
-
-function deletePrescriptiveItem(veiculoId, itemId) {
-  try {
-    const ss = getSpreadsheet();
-    const sheet = getOrCreateSheet(ss, SHEET_NAMES.PLANO_PRESCRITIVO);
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(itemId) || String(data[i][1]) === String(itemId) || String(data[i][2]) === String(itemId)) {
-        sheet.deleteRow(i + 1);
-        return { success: true, message: 'Diretriz prescritiva excluída com sucesso da base de dados.' };
-      }
-    }
-    return { success: true, message: 'Item removido do plano ativo.' };
-  } catch(e) {
-    Logger.log('Erro ao excluir item prescritivo: ' + e.toString());
-    return { success: false, message: 'Erro ao excluir item: ' + e.toString() };
-  }
-}
-
-function arquivarDossieCronologico(dossiePayload) {
-  try {
-    if (typeof dossiePayload === 'object' && dossiePayload !== null) {
-      return arquivarLaudoNoRepositorio(
-        dossiePayload.placa || dossiePayload.placaVeiculo || 'EEQ-9C28',
-        dossiePayload.tipo || dossiePayload.tipoRelatorio || 'DOSSIE_TECNICO',
-        dossiePayload.resumo || dossiePayload.resumoSintoma || 'Dossiê Técnico Consolidado',
-        dossiePayload.base64Pdf || dossiePayload.pdf || '',
-        dossiePayload.usuario || dossiePayload.userId || 'SIGMA_OPERATOR'
-      );
-    }
-    return { status: "sucesso", url: "#" };
-  } catch(e) {
-    Logger.log('Erro ao arquivar dossiê: ' + e.toString());
-    return { status: "erro", mensagem: e.toString() };
   }
 }
