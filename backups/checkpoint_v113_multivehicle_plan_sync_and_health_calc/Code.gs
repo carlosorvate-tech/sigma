@@ -763,7 +763,7 @@ function addVehicle(vehicle) {
   
   sheet.appendRow(row);
 
-    // GERAÇÃO PERSONALIZADA DO PLANO OEM VIA IA COM SCHEMA CANÔNICO PADRONIZADO
+  // GERAÇÃO PERSONALIZADA DO PLANO OEM VIA IA COM TRAVAS DE SEGURANÇA
   try {
     const planoResultado = gerarPlanoPrescritivoOEMComIA(id, marca, modelo, anoMod, motor, comb, trans, dist, regime);
     const diretrizes = planoResultado.diretrizes || [];
@@ -772,16 +772,17 @@ function addVehicle(vehicle) {
     diretrizes.forEach((d, idx) => {
       sheetPlano.appendRow([
         'PRES-' + id + '-' + (idx + 1),
-        id, // Coluna 2: VeiculoID
-        d.intervencao, // Coluna 3: Intervencao
-        d.subsistema || 'Motor/Trem de Força', // Coluna 4: Subsistema
-        'PREVENTIVA', // Coluna 5: Tipo
-        Number(d.intervaloKm || 10000), // Coluna 6: IntervaloKM
-        Number(d.intervaloMeses || 12), // Coluna 7: IntervaloMeses
-        d.especificacao || 'Conforme Manual do Fabricante', // Coluna 8: EspecificacaoTecnica
-        d.origemFonte || 'MANUAL_OEM_FABRICANTE', // Coluna 9: OrigemFonte
-        d.observacao || 'Diretriz técnica recomendada pela montadora', // Coluna 10: TextoPrecaucao
-        now // Coluna 11: DataAtualizacao
+        d.intervencao,
+        d.subsistema,
+        d.intervaloKm,
+        d.intervaloMeses,
+        d.intervaloKm,
+        d.intervaloMeses,
+        d.prioridade,
+        true,
+        d.origemFonte || 'MANUAL_OEM_FABRICANTE',
+        d.especificacao + ' - ' + (d.observacao || ''),
+        id
       ]);
     });
   } catch(e) { 
