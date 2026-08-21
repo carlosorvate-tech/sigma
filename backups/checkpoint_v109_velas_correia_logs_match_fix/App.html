@@ -1055,9 +1055,7 @@
         { ID: 'LOG-002', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Motor / Trem de Força', Sistema: 'Motor / Trem de Força', Subcausa: 'Substituição do Filtro de Combustível de Linha', DescricaoServico: 'Troca de filtro de combustível de linha FLEX', ValorTotal: 135, CustoPecas: 95, CustoMaoDeObra: 40, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: 'NF-5481', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
         { ID: 'LOG-003', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Motor / Trem de Força', Sistema: 'Motor / Trem de Força', Subcausa: 'Substituição do Filtro de Ar do Motor', DescricaoServico: 'Substituição do elemento filtrante de ar', ValorTotal: 115, CustoPecas: 85, CustoMaoDeObra: 30, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: 'NF-5481', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
         { ID: 'LOG-004', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Habitáculo / Climatização', Sistema: 'Habitáculo / Climatização', Subcausa: 'Substituição do Filtro de Cabine / Ar-Condicionado', DescricaoServico: 'Troca de filtro de cabine anti-pólen e higienização', ValorTotal: 105, CustoPecas: 75, CustoMaoDeObra: 30, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: 'NF-5481', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
-        { ID: 'LOG-005', Data: '2026-06-09', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Arrefecimento', Sistema: 'Arrefecimento', Subcausa: 'Sistema de Arrefecimento Completo (Bomba, Válvula, Trocador)', DescricaoServico: 'WURTH FLUIDO RADIADOR ROSA 1L (2 unidades) e revisão do arrefecimento', ValorTotal: 111.36, CustoPecas: 111.36, CustoMaoDeObra: 0, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: '000.001.414', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
-        { ID: 'LOG-006', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Sincronismo / Motor', Sistema: 'Sincronismo / Motor', Subcausa: 'Substituição do Kit Correia Dentada e Tensor', DescricaoServico: 'Substituição do Kit Correia Dentada HNBR Dayco/Gates, Rolamento e Tensor do Motor EW10A', ValorTotal: 850, CustoPecas: 580, CustoMaoDeObra: 270, OficinaNome: 'AUTO MECANICA REPUBLICA', NumeroNF: 'OS-023005', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
-        { ID: 'LOG-007', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Ignição / Motor', Sistema: 'Ignição / Motor', Subcausa: 'Substituição das Velas de Ignição', DescricaoServico: 'Substituição do Jogo de 4 Velas de Ignição Bosch/NGK Originais PSA EW10A', ValorTotal: 240, CustoPecas: 180, CustoMaoDeObra: 60, OficinaNome: 'AUTO MECANICA REPUBLICA', NumeroNF: 'OS-023005', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' }
+        { ID: 'LOG-005', Data: '2026-06-09', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Arrefecimento', Sistema: 'Arrefecimento', Subcausa: 'Sistema de Arrefecimento Completo (Bomba, Válvula, Trocador)', DescricaoServico: 'WURTH FLUIDO RADIADOR ROSA 1L (2 unidades) e revisão do arrefecimento', ValorTotal: 111.36, CustoPecas: 111.36, CustoMaoDeObra: 0, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: '000.001.414', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' }
       ],
       paretoChartInstance: null,
       activeIngestionTab: 'auto'
@@ -2141,38 +2139,6 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       lucide.createIcons();
     }
 
-    
-    function getKeywordsForIntervention(intervencao, subsistema) {
-      const lower = (String(intervencao || '') + ' ' + String(subsistema || '')).toLowerCase();
-      const kw = [String(intervencao).toLowerCase()];
-      
-      if (lower.includes('óleo') || lower.includes('oleo')) {
-        kw.push('oleo', 'óleo', 'lubrificante', 'filtro de oleo', 'filtro de óleo');
-      }
-      if (lower.includes('combustível') || lower.includes('combustivel')) {
-        kw.push('combustivel', 'combustível', 'filtro de combustivel', 'filtro de combustível', 'linha flex');
-      }
-      if (lower.includes('filtro de ar') || lower.includes('elemento')) {
-        kw.push('filtro de ar', 'elemento filtrante', 'elemento de ar');
-      }
-      if (lower.includes('cabine') || lower.includes('ar-condicionado') || lower.includes('ar condicionado') || lower.includes('climatização')) {
-        kw.push('cabine', 'ar condicionado', 'ar-condicionado', 'higienizacao', 'higienização', 'polen', 'pólen');
-      }
-      if (lower.includes('arrefecimento') || lower.includes('radiador') || lower.includes('aditivo') || lower.includes('bomba')) {
-        kw.push('arrefecimento', 'radiador', 'aditivo', 'bomba d', 'bomba de agua', 'bomba de água', 'valvula termostatica', 'válvula termostática', 'wurth', 'rosa', 'fluido radiador');
-      }
-      if (lower.includes('freio') || lower.includes('dot')) {
-        kw.push('freio', 'dot 4', 'dot4', 'pastilha', 'disco', 'fluido de freio');
-      }
-      if (lower.includes('correia') || lower.includes('sincronismo') || lower.includes('tensor') || lower.includes('rolamento') || lower.includes('distribui')) {
-        kw.push('correia', 'correia dentada', 'tensor', 'rolamento', 'sincronismo', 'distribuicao', 'distribuição', 'kit correia', 'dentada');
-      }
-      if (lower.includes('vela') || lower.includes('igni') || lower.includes('eletrodo')) {
-        kw.push('vela', 'velas', 'ignicao', 'ignição', 'jogo de velas', 'eletrodo', 'jogo de 4 velas');
-      }
-      return kw;
-    }
-
     function buildDynamicPrescriptivePlan(v) {
       if (!v) {
         state.prescriptivePlan = [];
@@ -2333,7 +2299,7 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
             especificacao_tecnica: c.EspecificacaoTecnica || c.especificacao_tecnica || 'Conforme especificação documental',
             origem_fonte: c.OrigemFonte || c.origem_fonte || 'MANUAL_OEM_FABRICANTE',
             texto_precaucao: c.TextoPrecaucao || c.texto_precaucao || 'Diretriz técnica sob acompanhamento.',
-            palavrasChave: getKeywordsForIntervention(intervencao, subsistema)
+            palavrasChave: [intervencao.toLowerCase()]
           });
         });
       }
@@ -2354,7 +2320,7 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
         
         let latestLog = null;
         for (let log of vehicleLogs) {
-          const desc = (String(log.DescricaoServico || log.descricaoServico || '') + ' ' + String(log.Subcausa || log.subcausa || '')).toLowerCase();
+          const desc = String(log.DescricaoServico || log.descricaoServico || '').toLowerCase();
           const sub = String(log.Subsistema || log.subsistema || '').toLowerCase();
           
           const match = keywords.some(kw => desc.includes(kw.toLowerCase())) || 
