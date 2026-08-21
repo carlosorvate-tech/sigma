@@ -269,39 +269,27 @@ function cleanPhysicalSheetDuplicates() {
 }
 
 function getInitialData() {
-  try {
-    setupSpreadsheet();
-    const ss = getSpreadsheet();
-    
-    const sheetAtivos = getOrCreateSheet(ss, SHEET_NAMES.ATIVOS);
-    let vehicles = parseSheetRows(sheetAtivos.getDataRange().getValues());
-    if (!vehicles || vehicles.length === 0) {
-      recomporBancoDadosCanonico();
-      vehicles = parseSheetRows(sheetAtivos.getDataRange().getValues());
-    }
+  try { recomporBancoDadosCanonico(); } catch(e) { Logger.log(e); }
+  setupSpreadsheet();
+  cleanPhysicalSheetDuplicates();
 
-    const sheetPrescritivo = getOrCreateSheet(ss, SHEET_NAMES.PLANO_PRESCRITIVO);
-    const prescriptivePlans = parseSheetRows(sheetPrescritivo.getDataRange().getValues());
+  const ss = getSpreadsheet();
+  
+  const sheetAtivos = getOrCreateSheet(ss, SHEET_NAMES.ATIVOS);
+  const vehicles = parseSheetRows(sheetAtivos.getDataRange().getValues());
 
-    const sheetOcorrencias = getOrCreateSheet(ss, SHEET_NAMES.REGISTRO_OCORRENCIAS);
-    const rawLogs = parseSheetRows(sheetOcorrencias.getDataRange().getValues());
-    const logs = deduplicateLogsAndItems(rawLogs);
+  const sheetPrescritivo = getOrCreateSheet(ss, SHEET_NAMES.PLANO_PRESCRITIVO);
+  const prescriptivePlans = parseSheetRows(sheetPrescritivo.getDataRange().getValues());
 
-    return {
-      vehicles: vehicles,
-      prescriptivePlans: prescriptivePlans,
-      logs: logs,
-      oficinas: getOficinas()
-    };
-  } catch(err) {
-    Logger.log('Erro em getInitialData: ' + err.toString());
-    return {
-      vehicles: [],
-      prescriptivePlans: [],
-      logs: [],
-      oficinas: getOficinas()
-    };
-  }
+  const sheetOcorrencias = getOrCreateSheet(ss, SHEET_NAMES.REGISTRO_OCORRENCIAS);
+  const rawLogs = parseSheetRows(sheetOcorrencias.getDataRange().getValues());
+  const logs = deduplicateLogsAndItems(rawLogs);
+
+  return {
+    vehicles: vehicles,
+    prescriptivePlans: prescriptivePlans,
+    logs: logs
+  };
 }
 
 function parseSheetRows(matrix) {
