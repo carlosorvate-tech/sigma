@@ -1094,7 +1094,7 @@
         if (savedVehicles) {
           const parsed = JSON.parse(savedVehicles);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            state.vehicles = deduplicateVehicles(parsed);
+            state.vehicles = parsed;
           }
         }
         const savedSelectedId = localStorage.getItem('sigma_selected_vehicle_id');
@@ -2070,7 +2070,7 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
             data.vehicles.push(localV);
           }
         });
-        state.vehicles = deduplicateVehicles(data.vehicles);
+        state.vehicles = data.vehicles;
       }
       if (data.prescriptivePlans && data.prescriptivePlans.length > 0) {
         state.customPrescriptions = data.prescriptivePlans;
@@ -2090,30 +2090,6 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
       saveStateToLocalStorage();
       renderVehicleSelectors();
       renderCurrentVehicleView();
-    }
-
-    
-    function deduplicateVehicles(vList) {
-      if (!Array.isArray(vList) || vList.length === 0) return [];
-      const seen = new Map();
-      const result = [];
-
-      vList.forEach(v => {
-        const placa = String(v.PlacaChassi || v.placaChassi || v.Placa || v.placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        const id = String(v.ID || v.id || '').trim();
-        const key = placa || id;
-        if (!key) return;
-
-        if (!seen.has(key)) {
-          seen.set(key, v);
-          result.push(v);
-        } else {
-          const existing = seen.get(key);
-          Object.assign(existing, v);
-        }
-      });
-
-      return result;
     }
 
     function renderVehicleSelectors() {

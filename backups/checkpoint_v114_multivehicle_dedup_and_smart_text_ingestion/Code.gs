@@ -1,28 +1,3 @@
-
-function deduplicateVehiclesList(vehicles) {
-  if (!Array.isArray(vehicles) || vehicles.length === 0) return [];
-  const seenPlacas = new Map();
-  const result = [];
-
-  vehicles.forEach(v => {
-    const placaRaw = String(v.PlacaChassi || v.placaChassi || v.Placa || v.placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-    const idRaw = String(v.ID || v.id || '').trim();
-    const key = placaRaw || idRaw;
-    if (!key) return;
-
-    if (!seenPlacas.has(key)) {
-      seenPlacas.set(key, v);
-      result.push(v);
-    } else {
-      // Mesclar dados mantendo o mais completo
-      const existing = seenPlacas.get(key);
-      Object.assign(existing, v);
-    }
-  });
-
-  return result;
-}
-
 /**
  * SIGMA - Sistema Inteligente para Gestão de Manutenções Automotivas
  * Powered by Gemini AI & Google Apps Script
@@ -298,7 +273,7 @@ function getInitialData() {
     const ss = getSpreadsheet();
     
     const sheetAtivos = getOrCreateSheet(ss, SHEET_NAMES.ATIVOS);
-    let vehicles = deduplicateVehiclesList(parseSheetRows(sheetAtivos.getDataRange().getValues()));
+    let vehicles = parseSheetRows(sheetAtivos.getDataRange().getValues());
     
     // Se a planilha de ativos estiver totalmente vazia (primeiro uso), popula o C4 Pallas
     if (!vehicles || vehicles.length === 0) {
@@ -382,128 +357,134 @@ function processPrescriptiveSource(dadosIngestao, regimeArg, tipoFonteArg, dados
     modoMerge = true;
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet() || getSpreadsheet();
-  let vPlaca = '';
-  let vKmAtual = 0;
-
-  // Busca os dados cadastrais reais do veículo ativo na planilha
-  if (veiculoId) {
+  // Busca os dados cadastrais reais do veículo ativo na planilha se não vieram preenchidos
+  if (!dadosVeiculo && veiculoId) {
     try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet() || getSpreadsheet();
       const sheetAtivos = getOrCreateSheet(ss, SHEET_NAMES.ATIVOS);
       const ativosData = sheetAtivos.getDataRange().getValues();
-      for (let i = 1; i < ativosData.length; i++) {
-        if (String(ativosData[i][0]) === String(veiculoId) || String(ativosData[i][7]).replace(/[^A-Z0-9]/gi, '') === String(veiculoId).replace(/[^A-Z0-9]/gi, '')) {
-          vPlaca = String(ativosData[i][7] || '').trim();
-          vKmAtual = Number(ativosData[i][10] || 0);
-          if (!dadosVeiculo) {
-            dadosVeiculo = `${ativosData[i][1]} ${ativosData[i][2]} (Ano ${ativosData[i][3]}/${ativosData[i][4]}) - Motor: ${ativosData[i][5]} - Placa: ${vPlaca} - KM: ${vKmAtual}`;
+      if (ativosData.length > 1) {
+        for (let i = 1; i < ativosData.length; i++) {
+          if (String(ativosData[i][0]) === String(veiculoId)) {
+            const marca = ativosData[i][1] || '';
+            const modelo = ativosData[i][2] || '';
+            const anoFab = ativosData[i][3] || '';
+            const anoMod = ativosData[i][4] || '';
+            const motor = ativosData[i][5] || '';
+            const comb = ativosData[i][6] || '';
+            const placa = ativosData[i][7] || '';
+            const kmAtual = ativosData[i][10] || 0;
+            const regime = ativosData[i][12] || regimeUso;
+            const trans = ativosData[i][13] || '';
+            const dist = ativosData[i][14] || '';
+            dadosVeiculo = `${marca} ${modelo} (Ano ${anoFab}/${anoMod}) - Motor: ${motor} - Combustível: ${comb} - Câmbio: ${trans} - Distribuição: ${dist} - Placa: ${placa} - Odômetro: ${Number(kmAtual).toLocaleString('pt-BR')} KM`;
+            regimeUso = regime || regimeUso;
+            break;
           }
-          break;
         }
       }
-    } catch(e) {}
+    } catch(e) {
+      Logger.log("Aviso ao buscar veículo no Sheets: " + e.toString());
+    }
   }
 
-  let extractedDirectives = [];
-  let extractedExecutedLogs = [];
+  let extractedItems = [];
 
-  const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || DEFAULT_GEMINI_KEY;
-
-  if (apiKey && (tipoFonte === 'AUTO' || tipoFonte === 'IA' || tipoFonte === 'TEXT' || tipoFonte === 'FILE')) {
+  if (tipoFonte === 'AUTO' || tipoFonte === 'IA') {
     try {
-      const prompt = `Você é o Engenheiro Especialista Chefe em Manutenção Automotiva e Auditoria Forense do SIGMA CMMS.
-Analise a entrada abaixo referente ao seguinte ativo veicular:
-- Configuração do Veículo: ${dadosVeiculo || "Veículo Automotor"}
-- Regime Operacional: ${regimeUso}
-- Texto / Documento Fornecido:
-"${typeof payload === 'string' ? payload.slice(0, 15000) : JSON.stringify(payload)}"
+      const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || DEFAULT_GEMINI_KEY;
+      if (!apiKey) throw new Error("Chave GEMINI_API_KEY não configurada.");
 
-TAREFA OBRIGATÓRIA:
-1. Extraia o PLANO PRESCRITIVO COMPLETO do veículo com os INTERVALOS PERIÓDICOS NORMAIS DE FÁBRICA (ex: Óleo a cada 10.000 KM, Filtros a cada 10.000 ou 20.000 KM, Correia Dentada a cada 70.000 KM / 56.000 KM severo, Velas a cada 40.000 KM, Arrefecimento a cada 40.000 KM, Freios a cada 20.000 KM). NUNCA coloque a quilometragem atual do carro como intervalo periódico!
-2. Identifique se o texto descreve MANUTENÇÕES JÁ REALIZADAS / EXECUTADAS NO PASSADO com suas respectivas quilometragens (ex: "trocado óleo aos 140000 km", "correia trocada com 130000", "revisão aos 142.000 km").
+      const modelName = 'gemini-2.5-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-Retorne ESTRITAMENTE um objeto JSON puro no seguinte formato:
-{
-  "diretrizes": [
-    {
-      "intervencao": "Nome da Intervenção",
-      "subsistema": "Motor/Trem de Força | Arrefecimento | Freios | Sincronismo / Motor | Ignição / Motor | Habitáculo / Climatização | Transmissão | Suspensão/Direção",
-      "tipo": "PREVENTIVA",
-      "intervalo_km": 10000,
-      "intervalo_meses": 12,
-      "especificacao_tecnica": "Norma técnica e especificação",
-      "origem_fonte": "MANUAL_OEM_FABRICANTE",
-      "texto_precaucao": "Justificativa técnica"
-    }
-  ],
-  "ocorrenciasRealizadas": [
-    {
-      "subcausa": "Nome da intervenção executada",
-      "subsistema": "Subsistema correspondente",
-      "km": 140000,
-      "data": "2026-08-10",
-      "descricao": "Detalhes do serviço realizado e peças trocadas",
-      "oficina": "Oficina Registrada"
-    }
-  ]
-}`;
+      const prompt = `Você é o engenheiro-chefe de confiabilidade automotiva e mantenedor especialista do sistema SIGMA CMMS.
+Gere um plano prescritivo completo, rigoroso e altamente calibrado sob medida para o seguinte ativo veicular:
+- Veículo / Configuração Cadastrada: ${dadosVeiculo || "Veículo Automotor Padrão"}
+- Regime Operacional de Severidade: ${regimeUso || "SEVERO_URBANO"}
 
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
-      const res = UrlFetchApp.fetch(url, {
+DIRETRIZES TÉCNICAS E DE ENGENHARIA OBRIGATÓRIAS:
+1. Analise as especificações EXATAS da montadora deste veículo específico (fabricante, modelo, motorização, tipo de combustível, tipo de transmissão/câmbio manual, automático convencional, CVT ou dupla embreagem, e tipo de distribuição por correia dentada ou corrente).
+2. Descubra e inclua TODOS os subsistemas essenciais com seus respectivos componentes para este modelo e ano:
+   - Motor/Trem de Força (Óleo com especificação e viscosidade exata da montadora, Filtros de Óleo, Ar e Combustível, Velas de Ignição, Sistema de Distribuição/Correia/Tensores, Coxins do Motor)
+   - Transmissão (Fluido de Câmbio com especificação OEM exata, seja manual, automático, CVT ou automatizado, filtros e vedantes)
+   - Arrefecimento (Bomba d'Água, Válvula Termostática, Radiador/Trocador de Calor, Aditivo homologado pela montadora com proporção correta)
+   - Freios (Fluido de Freio DOT homologado, Pastilhas e Discos de Freio Dianteiros e Traseiros)
+   - Suspensão/Direção (Amortecedores, Batentes, Bieletas, Buchas de Bandeja, Rótulas/Pivôs, Fluido da Direção se hidráulica/eletro-hidráulica, Alinhamento 3D e Balanceamento)
+   - Fluidos/Insumos (Fluidos de consumo, lubrificantes especiais e aditivos preventivos homologados pelo fabricante)
+   - Elétrica/Eletrônica/Climatização (Filtro de Cabine / Ar Condicionado, Bateria e Sistema de Carga)
+3. Aplique correções preventivas reais baseadas em Boletins Técnicos (TSBs) oficiais da montadora e histórico de falhas crônicas conhecidas para o motor e transmissão deste modelo específico.
+4. Calibre os intervalos de quilometragem e tempo em meses de acordo com o regime operacional de severidade informado (${regimeUso}).
+5. Retorne ESTRITAMENTE um array JSON puro, sem formatação markdown, contendo objetos com o formato exato:
+[
+  {
+    "subsistema": "Nome do subsistema (ex: Motor/Trem de Força, Transmissão, Arrefecimento, Freios, Suspensão/Direção, Fluidos/Insumos, Elétrica/Eletrônica, Climatização)",
+    "intervencao": "Nome técnico claro da intervenção preventiva",
+    "tipo": "PREVENTIVA",
+    "intervalo_km": 40000,
+    "intervalo_meses": 24,
+    "especificacao_tecnica": "Especificação técnica oficial exata de peças, fluidos e normas da montadora para este veículo",
+    "origem_fonte": "MANUAL_OEM_FABRICANTE",
+    "texto_precaucao": "Justificativa técnica / Consequência de falha / Referência a boletim técnico ou recomendação de fábrica"
+  }
+]`;
+
+      const payloadBody = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: "application/json"
+        }
+      };
+
+      const options = {
         method: "post",
         contentType: "application/json",
-        payload: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
-        }),
+        payload: JSON.stringify(payloadBody),
         muteHttpExceptions: true
-      });
+      };
 
-      if (res.getResponseCode() === 200) {
-        const jsonRes = JSON.parse(res.getContentText());
-        const rawText = jsonRes.candidates[0].content.parts[0].text.replace(/\`\`\`json/gi, '').replace(/\`\`\`/gi, '').trim();
-        const parsed = JSON.parse(rawText);
-        if (parsed.diretrizes && Array.isArray(parsed.diretrizes)) extractedDirectives = parsed.diretrizes;
-        if (parsed.ocorrenciasRealizadas && Array.isArray(parsed.ocorrenciasRealizadas)) extractedExecutedLogs = parsed.ocorrenciasRealizadas;
+      const response = UrlFetchApp.fetch(url, options);
+      if (response.getResponseCode() === 200) {
+        const data = JSON.parse(response.getContentText());
+        if (data.candidates && data.candidates.length > 0) {
+          let respostaIA = data.candidates[0].content.parts[0].text;
+          respostaIA = respostaIA.replace(/\`\`\`json/gi, '').replace(/\`\`\`/g, '').trim();
+          const itensGerados = JSON.parse(respostaIA);
+          if (Array.isArray(itensGerados) && itensGerados.length > 0) {
+            extractedItems = itensGerados;
+          }
+        }
+      } else {
+        Logger.log("Aviso na chamada Gemini IA: " + response.getContentText());
       }
-    } catch(e) {
-      Logger.log("Erro no processamento Gemini de texto: " + e.toString());
+    } catch (e) {
+      Logger.log("Falha na IA Autônoma, operando com fallback seguro: " + e.message);
     }
-  }
-
-  // Fallback se necessário
-  if (!extractedDirectives || extractedDirectives.length === 0) {
-    extractedDirectives = getDefaultOemPlanForVehicle(regimeUso);
-  }
-
-  // Gravar ocorrências realizadas identificadas na planilha REGISTRO_OCORRENCIAS
-  if (extractedExecutedLogs && extractedExecutedLogs.length > 0) {
+  } else if (tipoFonte === 'URL') {
+    let pageText = '';
     try {
-      const sheetLogs = getOrCreateSheet(ss, SHEET_NAMES.REGISTRO_OCORRENCIAS);
-      extractedExecutedLogs.forEach(oc => {
-        const idLog = 'LOG-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-        sheetLogs.appendRow([
-          idLog,
-          oc.data || new Date().toISOString().split('T')[0],
-          Number(oc.km || vKmAtual),
-          'PREVENTIVA',
-          oc.subsistema || 'Motor/Trem de Força',
-          oc.subcausa || 'Manutenção Preventiva Registrada',
-          0, 0, 1.0,
-          oc.oficina || 'Oficina Registrada',
-          'DOC-' + Date.now().toString().slice(-4),
-          '',
-          oc.descricao || oc.subcausa,
-          veiculoId,
-          'Registro importado via ingestão de histórico'
-        ]);
-      });
-    } catch(e) {
-      Logger.log("Erro ao salvar logs executados: " + e.toString());
+      const response = UrlFetchApp.fetch(payload, { muteHttpExceptions: true });
+      pageText = response.getContentText().slice(0, 10000);
+    } catch (e) { pageText = ''; }
+    if (pageText) {
+      extractedItems = parseTextPrescriptionsWithRules(pageText, regimeUso, 'BOLETIM_TECNICO');
+    }
+  } else if (tipoFonte === 'TEXT') {
+    extractedItems = parseTextPrescriptionsWithRules(payload, regimeUso, 'MANTENEDOR_ESPECIALISTA');
+  } else if (tipoFonte === 'FILE') {
+    const fileText = typeof payload === 'object' ? (payload.textData || '') : String(payload || '');
+    if (fileText && fileText.length > 10 && !/\.(jpeg|jpg|png|pdf)$/i.test(fileText.trim())) {
+      extractedItems = parseTextPrescriptionsWithRules(fileText, regimeUso, 'MANUAL_OEM_FABRICANTE');
     }
   }
 
-  return savePrescriptivePlan(veiculoId, extractedDirectives, modoMerge);
+  // Se nenhum item foi extraído, carrega o plano padrão da montadora calibrado
+  if (!extractedItems || extractedItems.length === 0) {
+    extractedItems = getDefaultOemPlanForVehicle(regimeUso);
+  }
+
+  return savePrescriptivePlan(veiculoId, extractedItems, modoMerge);
 }
 
 function parseTextPrescriptionsWithRules(textInput, regimeUso, defaultOrigin) {
