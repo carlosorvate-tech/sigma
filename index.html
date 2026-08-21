@@ -1040,17 +1040,33 @@
       ],
       selectedVehicleId: "VEIC-001",
       prescriptivePlan: [],
-      customPrescriptions: [],
-      logs: [],
+      customPrescriptions: [
+        { ID: 'PRES-001', Subcausa: 'Substituição do Óleo do Motor e Filtro', Sistema: 'Motor / Trem de Força', IntervaloKM_Normal: 10000, IntervaloMeses_Normal: 12, IntervaloKM_Severo: 10000, IntervaloMeses_Severo: 12, Prioridade: 'CRITICA', Ativo: true, Fonte: 'MANTENEDOR', Observacoes: 'Óleo 10W40 semissintético PSA B71 2296', VeiculoID: 'VEIC-001' },
+        { ID: 'PRES-002', Subcausa: 'Substituição do Filtro de Combustível de Linha', Sistema: 'Motor / Trem de Força', IntervaloKM_Normal: 10000, IntervaloMeses_Normal: 12, IntervaloKM_Severo: 10000, IntervaloMeses_Severo: 12, Prioridade: 'CRITICA', Ativo: true, Fonte: 'MANTENEDOR', Observacoes: 'Proteção do sistema de injeção', VeiculoID: 'VEIC-001' },
+        { ID: 'PRES-003', Subcausa: 'Substituição do Filtro de Ar do Motor', Sistema: 'Motor / Trem de Força', IntervaloKM_Normal: 10000, IntervaloMeses_Normal: 12, IntervaloKM_Severo: 10000, IntervaloMeses_Severo: 12, Prioridade: 'ALERTA', Ativo: true, Fonte: 'MANTENEDOR', Observacoes: 'Elemento de ar do motor', VeiculoID: 'VEIC-001' },
+        { ID: 'PRES-004', Subcausa: 'Substituição do Filtro de Cabine / Ar-Condicionado', Sistema: 'Habitáculo / Climatização', IntervaloKM_Normal: 10000, IntervaloMeses_Normal: 12, IntervaloKM_Severo: 10000, IntervaloMeses_Severo: 12, Prioridade: 'ALERTA', Ativo: true, Fonte: 'MANTENEDOR', Observacoes: 'Filtro anti-pólen e higienização', VeiculoID: 'VEIC-001' },
+        { ID: 'PRES-005', Subcausa: 'Sistema de Arrefecimento Completo (Bomba, Válvula, Trocador)', Sistema: 'Arrefecimento', IntervaloKM_Normal: 10000, IntervaloMeses_Normal: 12, IntervaloKM_Severo: 10000, IntervaloMeses_Severo: 12, Prioridade: 'CRITICA', Ativo: true, Fonte: 'MANTENEDOR', Observacoes: 'Fluido Wurth Rosa NF 000.001.414', VeiculoID: 'VEIC-001' },
+        { ID: 'PRES-006', Subcausa: 'Substituição Completa do Fluido de Freio (DOT 4)', Sistema: 'Freios', IntervaloKM_Normal: 10000, IntervaloMeses_Normal: 12, IntervaloKM_Severo: 10000, IntervaloMeses_Severo: 12, Prioridade: 'CRITICA', Ativo: true, Fonte: 'MANTENEDOR', Observacoes: 'Diretriz técnica sob acompanhamento', VeiculoID: 'VEIC-001' },
+        { ID: 'PRES-007', Subcausa: 'Substituição do Kit Correia Dentada e Tensor', Sistema: 'Sincronismo / Motor', IntervaloKM_Normal: 70000, IntervaloMeses_Normal: 48, IntervaloKM_Severo: 56000, IntervaloMeses_Severo: 36, Prioridade: 'CRITICA', Ativo: true, Fonte: 'OEM', Observacoes: 'Kit correia sincronizadora e tensor', VeiculoID: 'VEIC-001' },
+        { ID: 'PRES-008', Subcausa: 'Substituição das Velas de Ignição', Sistema: 'Ignição / Motor', IntervaloKM_Normal: 40000, IntervaloMeses_Normal: 24, IntervaloKM_Severo: 32000, IntervaloMeses_Severo: 24, Prioridade: 'CRITICA', Ativo: true, Fonte: 'OEM', Observacoes: 'Jogo de 4 velas de ignição', VeiculoID: 'VEIC-001' }
+      ],
+      logs: [
+        { ID: 'LOG-001', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Motor / Trem de Força', Sistema: 'Motor / Trem de Força', Subcausa: 'Substituição do Óleo do Motor e Filtro', DescricaoServico: 'Troca de óleo de motor 10W40 semissintético e filtro de óleo Mann', ValorTotal: 320, CustoPecas: 240, CustoMaoDeObra: 80, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: 'NF-5481', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
+        { ID: 'LOG-002', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Motor / Trem de Força', Sistema: 'Motor / Trem de Força', Subcausa: 'Substituição do Filtro de Combustível de Linha', DescricaoServico: 'Troca de filtro de combustível de linha FLEX', ValorTotal: 135, CustoPecas: 95, CustoMaoDeObra: 40, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: 'NF-5481', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
+        { ID: 'LOG-003', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Motor / Trem de Força', Sistema: 'Motor / Trem de Força', Subcausa: 'Substituição do Filtro de Ar do Motor', DescricaoServico: 'Substituição do elemento filtrante de ar', ValorTotal: 115, CustoPecas: 85, CustoMaoDeObra: 30, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: 'NF-5481', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
+        { ID: 'LOG-004', Data: '2026-08-10', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Habitáculo / Climatização', Sistema: 'Habitáculo / Climatização', Subcausa: 'Substituição do Filtro de Cabine / Ar-Condicionado', DescricaoServico: 'Troca de filtro de cabine anti-pólen e higienização', ValorTotal: 105, CustoPecas: 75, CustoMaoDeObra: 30, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: 'NF-5481', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' },
+        { ID: 'LOG-005', Data: '2026-06-09', KM: 191706, TipoManutencao: 'PREVENTIVA', Tipo: 'PREVENTIVA', Subsistema: 'Arrefecimento', Sistema: 'Arrefecimento', Subcausa: 'Sistema de Arrefecimento Completo (Bomba, Válvula, Trocador)', DescricaoServico: 'WURTH FLUIDO RADIADOR ROSA 1L (2 unidades) e revisão do arrefecimento', ValorTotal: 111.36, CustoPecas: 111.36, CustoMaoDeObra: 0, OficinaNome: 'FLORIPA CASA E CONSTRUCAO LTDA', NumeroNF: '000.001.414', VeiculoID: 'VEIC-001', Placa: 'EEQ-9C28' }
+      ],
       paretoChartInstance: null,
       activeIngestionTab: 'auto'
     };
 
         
     document.addEventListener('DOMContentLoaded', () => {
-            
       lucide.createIcons();
       setupDropzoneHandlers();
+      renderVehicleSelectors();
+      renderCurrentVehicleView();
       loadData();
     });
 
@@ -1979,10 +1995,19 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
     }
 
     function onDataLoaded(data) {
-      state.vehicles = data.vehicles || [];
-      state.customPrescriptions = data.prescriptivePlans || [];
-      state.logs = deduplicateLogsAndItems(data.logs || []);
-      if (data.oficinas && data.oficinas.length > 0) state.oficinas = data.oficinas;
+      if (!data) return;
+      if (data.vehicles && data.vehicles.length > 0) {
+        state.vehicles = data.vehicles;
+      }
+      if (data.prescriptivePlans && data.prescriptivePlans.length > 0) {
+        state.customPrescriptions = data.prescriptivePlans;
+      }
+      if (data.logs && data.logs.length > 0) {
+        state.logs = deduplicateLogsAndItems(data.logs);
+      }
+      if (data.oficinas && data.oficinas.length > 0) {
+        state.oficinas = data.oficinas;
+      }
 
       const currentExists = state.vehicles.some(v => String(v.ID || v.id) === String(state.selectedVehicleId));
       if (!currentExists && state.vehicles.length > 0) {
