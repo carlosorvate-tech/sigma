@@ -1064,7 +1064,71 @@
     };
 
         
+    
+    // --- PERSISTÊNCIA LOCALSTORAGE RESILIENTE ---
+    function saveStateToLocalStorage() {
+      try {
+        if (state.vehicles && state.vehicles.length > 0) {
+          localStorage.setItem('sigma_vehicles', JSON.stringify(state.vehicles));
+        }
+        if (state.selectedVehicleId) {
+          localStorage.setItem('sigma_selected_vehicle_id', state.selectedVehicleId);
+        }
+        if (state.logs && state.logs.length > 0) {
+          localStorage.setItem('sigma_logs', JSON.stringify(state.logs));
+        }
+        if (state.customPrescriptions && state.customPrescriptions.length > 0) {
+          localStorage.setItem('sigma_prescriptions', JSON.stringify(state.customPrescriptions));
+        }
+        if (state.oficinas && state.oficinas.length > 0) {
+          localStorage.setItem('sigma_oficinas', JSON.stringify(state.oficinas));
+        }
+      } catch(e) {
+        console.warn('Aviso ao salvar no localStorage:', e);
+      }
+    }
+
+    function loadStateFromLocalStorage() {
+      try {
+        const savedVehicles = localStorage.getItem('sigma_vehicles');
+        if (savedVehicles) {
+          const parsed = JSON.parse(savedVehicles);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            state.vehicles = parsed;
+          }
+        }
+        const savedSelectedId = localStorage.getItem('sigma_selected_vehicle_id');
+        if (savedSelectedId && state.vehicles.some(v => String(v.ID || v.id) === String(savedSelectedId))) {
+          state.selectedVehicleId = savedSelectedId;
+        }
+        const savedLogs = localStorage.getItem('sigma_logs');
+        if (savedLogs) {
+          const parsedLogs = JSON.parse(savedLogs);
+          if (Array.isArray(parsedLogs) && parsedLogs.length > 0) {
+            state.logs = deduplicateLogsList(parsedLogs);
+          }
+        }
+        const savedPrescriptions = localStorage.getItem('sigma_prescriptions');
+        if (savedPrescriptions) {
+          const parsedPresc = JSON.parse(savedPrescriptions);
+          if (Array.isArray(parsedPresc) && parsedPresc.length > 0) {
+            state.customPrescriptions = parsedPresc;
+          }
+        }
+        const savedOficinas = localStorage.getItem('sigma_oficinas');
+        if (savedOficinas) {
+          const parsedOfi = JSON.parse(savedOficinas);
+          if (Array.isArray(parsedOfi) && parsedOfi.length > 0) {
+            state.oficinas = parsedOfi;
+          }
+        }
+      } catch(e) {
+        console.warn('Aviso ao carregar do localStorage:', e);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      loadStateFromLocalStorage();
       lucide.createIcons();
       setupDropzoneHandlers();
       renderVehicleSelectors();
@@ -1999,6 +2063,13 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
     function onDataLoaded(data) {
       if (!data) return;
       if (data.vehicles && data.vehicles.length > 0) {
+        // Mesclar veículos remotos preservando novos cadastrados localmente
+        const existingIds = new Set(data.vehicles.map(v => String(v.ID || v.id)));
+        state.vehicles.forEach(localV => {
+          if (!existingIds.has(String(localV.ID || localV.id))) {
+            data.vehicles.push(localV);
+          }
+        });
         state.vehicles = data.vehicles;
       }
       if (data.prescriptivePlans && data.prescriptivePlans.length > 0) {
@@ -2016,6 +2087,7 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
         state.selectedVehicleId = state.vehicles[0].ID || state.vehicles[0].id;
       }
 
+      saveStateToLocalStorage();
       renderVehicleSelectors();
       renderCurrentVehicleView();
     }
@@ -3039,6 +3111,7 @@ function renderLogsTable() {
         }
       }
 
+      saveStateToLocalStorage();
       closeVehicleModal();
       renderVehicleSelectors();
       renderCurrentVehicleView();

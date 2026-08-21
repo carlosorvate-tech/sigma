@@ -270,36 +270,22 @@ function cleanPhysicalSheetDuplicates() {
 
 function getInitialData() {
   try {
+    setupSpreadsheet();
     const ss = getSpreadsheet();
     
     const sheetAtivos = getOrCreateSheet(ss, SHEET_NAMES.ATIVOS);
     let vehicles = parseSheetRows(sheetAtivos.getDataRange().getValues());
-    
-    // Se a planilha de ativos estiver totalmente vazia (primeiro uso), popula o C4 Pallas
     if (!vehicles || vehicles.length === 0) {
-      const headersAtivos = [
-        'ID', 'Marca', 'Modelo', 'AnoFabricacao', 'AnoModelo', 
-        'Motorizacao', 'Combustivel', 'PlacaChassi', 'DataApropriacao', 
-        'KMInicial', 'KMAtual', 'DataUltimaAtualizacao',
-        'RegimeUso', 'TipoTransmissao', 'TipoDistribuicao'
-      ];
-      sheetAtivos.clear();
-      sheetAtivos.appendRow(headersAtivos);
-      sheetAtivos.appendRow([
-        'VEIC-001', 'CITROËN', 'C4 PALLAS', 2008, 2009,
-        '2.0 16V EW10A', 'FLEX', 'EEQ-9C28', '2026-08-01',
-        191706, 191900, '2026-08-21',
-        'SEVERO_URBANO', 'Automático', 'Correia Dentada'
-      ]);
+      recomporBancoDadosCanonico();
       vehicles = parseSheetRows(sheetAtivos.getDataRange().getValues());
     }
 
     const sheetPrescritivo = getOrCreateSheet(ss, SHEET_NAMES.PLANO_PRESCRITIVO);
-    let prescriptivePlans = parseSheetRows(sheetPrescritivo.getDataRange().getValues());
+    const prescriptivePlans = parseSheetRows(sheetPrescritivo.getDataRange().getValues());
 
     const sheetOcorrencias = getOrCreateSheet(ss, SHEET_NAMES.REGISTRO_OCORRENCIAS);
-    let rawLogs = parseSheetRows(sheetOcorrencias.getDataRange().getValues());
-    let logs = deduplicateLogsAndItems(rawLogs);
+    const rawLogs = parseSheetRows(sheetOcorrencias.getDataRange().getValues());
+    const logs = deduplicateLogsAndItems(rawLogs);
 
     return {
       vehicles: vehicles,
@@ -308,15 +294,6 @@ function getInitialData() {
       oficinas: getOficinas()
     };
   } catch(err) {
-    Logger.log('Erro em getInitialData: ' + err.toString());
-    return {
-      vehicles: [],
-      prescriptivePlans: [],
-      logs: [],
-      oficinas: getOficinas()
-    };
-  }
-} catch(err) {
     Logger.log('Erro em getInitialData: ' + err.toString());
     return {
       vehicles: [],
@@ -1224,7 +1201,6 @@ function processDocumentAI(base64Data, mimeType, fileName) {
 
 
 function repairAndCleanAtivosSheet(ss) {
-  return; // DESATIVADO PARA PRESERVAR TODOS OS VEÍCULOS
   try {
     const sheet = getOrCreateSheet(ss, SHEET_NAMES.ATIVOS);
     const data = sheet.getDataRange().getValues();
