@@ -1950,10 +1950,12 @@ function finalizeBatchProcess(totalFiles, totalItems, docsFound) {
     function onDataLoaded(data) {
       state.vehicles = data.vehicles || [];
       state.customPrescriptions = data.prescriptivePlans || [];
-      state.logs = deduplicateLogsList(data.logs || []);
+      state.logs = deduplicateLogsAndItems(data.logs || []);
+      if (data.oficinas && data.oficinas.length > 0) state.oficinas = data.oficinas;
 
-      if (state.vehicles.length > 0 && !state.selectedVehicleId) {
-        state.selectedVehicleId = state.vehicles[0].ID;
+      const currentExists = state.vehicles.some(v => String(v.ID || v.id) === String(state.selectedVehicleId));
+      if (!currentExists && state.vehicles.length > 0) {
+        state.selectedVehicleId = state.vehicles[0].ID || state.vehicles[0].id;
       }
 
       renderVehicleSelectors();
@@ -2910,6 +2912,8 @@ function renderLogsTable() {
         Combustivel: document.getElementById('vCombustivel').value,
         tipoTransmissao: document.getElementById('vTransmissao').value,
         TipoTransmissao: document.getElementById('vTransmissao').value,
+        tipoDistribuicao: document.getElementById('vDistribuicao') ? document.getElementById('vDistribuicao').value : 'Correia Dentada',
+        TipoDistribuicao: document.getElementById('vDistribuicao') ? document.getElementById('vDistribuicao').value : 'Correia Dentada',
         regimeUso: document.getElementById('vRegimeUso').value,
         RegimeUso: document.getElementById('vRegimeUso').value,
         kmInicial: Number(document.getElementById('vKmInicial').value),
@@ -2919,28 +2923,27 @@ function renderLogsTable() {
       };
 
       if (vId) {
-        const v = state.vehicles.find(item => String(item.ID) === String(vId));
-        if (v) {
-          Object.assign(v, vObj);
-        }
+        const v = state.vehicles.find(item => String(item.ID || item.id) === String(vId));
+        if (v) Object.assign(v, vObj);
         if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run
-            .withSuccessHandler(res => {
-              loadData();
-            })
+            .withSuccessHandler(res => { loadData(); })
             .updateVehicle(vObj);
         }
       } else {
-        const newId = 'VEIC-' + String(state.vehicles.length + 1).padStart(3, '0');
+        const nextNum = state.vehicles.length + 1;
+        const newId = 'VEIC-' + String(nextNum).padStart(3, '0');
         vObj.id = newId;
         vObj.ID = newId;
         
         state.vehicles.push(vObj);
         state.selectedVehicleId = newId;
+        
         if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run
-            .withSuccessHandler(res => {
-              loadData();
+            .withSuccessHandler(res => { 
+              if (res && res.vehicleId) state.selectedVehicleId = res.vehicleId;
+              loadData(); 
             })
             .addVehicle(vObj);
         }
