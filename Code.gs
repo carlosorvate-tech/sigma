@@ -316,15 +316,6 @@ function getInitialData() {
       oficinas: getOficinas()
     };
   }
-} catch(err) {
-    Logger.log('Erro em getInitialData: ' + err.toString());
-    return {
-      vehicles: [],
-      prescriptivePlans: [],
-      logs: [],
-      oficinas: getOficinas()
-    };
-  }
 }
 
 function parseSheetRows(matrix) {
