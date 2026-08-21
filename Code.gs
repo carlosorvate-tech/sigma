@@ -1862,13 +1862,7 @@ function obterOficinaPorId(id) {
 function testeConexaoGemini() { var res = consultarGeminiSigma('Teste de conectividade', {ativo: 'Infinitus-Core'}); Logger.log(JSON.stringify(res)); return res; }
 
 
-function doGet(e) {
-  if (e && e.parameter && e.parameter.teste === 'ia') {
-    var res = consultarGeminiSigma('Responda exatamente: Conex�o corporativa estabelecida com sucesso.', {ativo: 'Infinitus-Core-Test'});
-    return HtmlService.createHtmlOutput('<h2>Status da IA Corporativa (Gemini Pro)</h2><pre>' + JSON.stringify(res, null, 2) + '</pre>');
-  }
-  return HtmlService.createHtmlOutputFromFile('index');
-}
+
 
 
 /**
